@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lunarballz</title>
+  <style>
+    /* RESET & BACKGROUND */
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow-x: hidden; overflow-y: auto;
+      scroll-behavior: smooth;
+      background: radial-gradient(ellipse at bottom,
+        #5a3a78 0%, #0b0d1a 40%, #000 100%);
+      font-family: 'Orbitron', sans-serif;
+      color: white;
+    }
+    canvas { position: fixed; top: 0; left: 0; z-index: 1; }
+
+    /* SPLASH */
+    .splash {
+      position: relative; z-index: 2; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding-top: 5vh;
+    }
+    .logo-container {
+      animation: fadeIn 2s ease-out forwards;
+      margin-bottom: 20px;
+    }
+    .logo-container img {
+      width: 50vw; max-width: 600px;
+    }
+    .button-container {
+      display: flex; flex-direction: column; gap: 16px;
+      align-items: center;
+      animation: fadeIn 2s ease-out 0.5s forwards;
+      opacity: 0;
+    }
+    .game-button {
+      width: 260px;
+      background: linear-gradient(to bottom, #bce1f1, #93c9e0);
+      border: 4px solid #000; border-radius: 16px;
+      padding: 14px 0; font-size: 1.6rem; font-weight: 900;
+      color: #FFD54F;
+      text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000,
+        -2px 2px 0 #000, 2px 2px 0 #000;
+      cursor: pointer; box-shadow: 0 4px 0 #555;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .game-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SVG DOWN-ARROW */
+    .down-arrow {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      width: 40px; height: 40px; cursor: pointer;
+      z-index: 99; animation: bounce 1.6s infinite;
+    }
+    .down-arrow svg {
+      width: 100%; height: 100%;
+      fill: none; stroke: #fff; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%    { transform: translateX(-50%) translateY(10px); }
+    }
+
+    /* SECTIONS */
+    section { padding: 80px 20px; text-align: center; }
+    .about-section { background: #0b0d1a; }
+    .howto-section { background: #111; }
+    .cards-section { background: #1a1a2e; }
+    section h2 {
+      font-size: 2.5rem; color: #FFD54F; margin-bottom: 20px;
+    }
+    .about-section p, .howto-section p {
+      max-width: 800px; margin: 0 auto;
+      font-size: 1.1rem; line-height: 1.7; color: #ccc;
+    }
+    .howto-section p { color: #ddd; }
+
+    /* CARD GRID */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px; max-width: 1200px; margin: 40px auto 0;
+    }
+    .card {
+      background: #222; border: 2px solid; border-radius: 12px;
+      overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+    .card img { width: 100%; height: auto; }
+    .card-content {
+      padding: 16px; flex-grow: 1;
+      display: flex; flex-direction: column;
+    }
+    .card-title {
+      font-size: 1.2rem; font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: .95rem; flex-grow: 1;
+      margin-bottom: 8px; color: #ccc;
+    }
+    .card-stats {
+      font-size: .9rem;
+      display: flex; justify-content: space-between;
+    }
+
+    /* RARITY BORDERS */
+    .rarity-common    { border-color: #888; }
+    .rarity-uncommon  { border-color: #4caf50; }
+    .rarity-rare      { border-color: #2196f3; }
+    .rarity-epic      { border-color: #9c27b0; }
+    .rarity-legendary { border-color: #ffc107; }
+
+    @media (max-width: 768px) {
+      .logo-container img { width: 80vw; }
+      .game-button { width: 220px; font-size: 1.3rem; padding: 12px 0; }
+      .down-arrow { width: 32px; height: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="stars"></canvas>
+
+  <section class="splash">
+    <div class="logo-container">
+      <img src="lunarballz-logo.png" alt="Lunarballz Logo">
+    </div>
+    <div class="button-container">
+      <button class="game-button">START</button>
+      <button class="game-button">OPTIONS</button>
+      <button class="game-button">EXIT</button>
+    </div>
+  </section>
+
+  <div class="down-arrow" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 5v14m0 0l-6-6m6 6l6-6"/>
+    </svg>
+  </div>
+
+  <section class="about-section" id="about">
+    <h2>About Lunarballz</h2>
+    <p>
+      Lunarballz is a high‑octane, deck‑building conquest game on the moon! Build structures,
+      collect cosmic balls, and crush your opponents across lunar landscapes. Every building
+      card brings a unique effect—spawn extra balls, generate coins, even call down nuclear
+      missiles. Adapt your deck, outsmart your rivals, and claim lunar dominance!
+    </p>
+  </section>
+
+  <section class="howto-section" id="howto">
+    <h2>How to Play</h2>
+    <p>
+      • Draw three random cards each round.<br>
+      • Spend coins to build structures on your side.<br>
+      • Each ball‑hit triggers your building’s effect.<br>
+      • Balance offense and defense—your towers can be destroyed.<br>
+      • Win by obliterating your opponent’s Lunar Base!
+    </p>
+  </section>
+
+  <section class="cards-section" id="cards">
+    <h2>Card Gallery</h2>
+    <div class="card-grid" id="cardGrid"></div>
+  </section>
+
+  <script>
+    // STARFIELD
+    const canvas = document.getElementById('stars'),
+          ctx = canvas.getContext('2d');
+    let stars=[], numStars=120;
+    function resizeCanvas(){
+      canvas.width=innerWidth; canvas.height=innerHeight;
+      stars=Array.from({length:numStars}, ()=>({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.5+0.3,
+        a: Math.random(), d: Math.random()*0.02+0.005
+      }));
+    }
+    function animateStars(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      stars.forEach(s=>{
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,2*Math.PI);
+        ctx.fillStyle=`rgba(255,255,255,${s.a})`;
+        ctx.fill();
+        s.a+=s.d; if(s.a<=0||s.a>=1) s.d*=-1;
+      });
+      requestAnimationFrame(animateStars);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); animateStars();
+  </script>
+
+  <!-- LOAD YOUR CARDS AND RENDER -->
+  <script src="cards.js"></script>
+  <script>
+    const grid = document.getElementById('cardGrid');
+    LunarCards.CARD_POOL.forEach(card => {
+      const wrapper = document.createElement('div');
+      wrapper.className = `card rarity-${card.rarity}`;
+
+      const img = document.createElement('img');
+      img.src = `cards/${card.id}.png`;
+      img.alt = card.name;
+      wrapper.appendChild(img);
+
+      const content = document.createElement('div');
+      content.className = 'card-content';
+
+      const title = document.createElement('div');
+      title.className = 'card-title';
+      title.textContent = card.name;
+      content.appendChild(title);
+
+      const desc = document.createElement('div');
+      desc.className = 'card-desc';
+      desc.textContent = card.description;
+      content.appendChild(desc);
+
+      const stats = document.createElement('div');
+      stats.className = 'card-stats';
+      stats.innerHTML = `<span>Cost: ${card.cost}</span><span>HP: ${card.hp}</span>`;
+      content.appendChild(stats);
+
+      wrapper.appendChild(content);
+      grid.appendChild(wrapper);
+    });
+  </script>
+</body>
+</html>

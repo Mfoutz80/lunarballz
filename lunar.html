@@ -1,0 +1,1691 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Conquest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="cards.js"></script>
+    <script src="game_state.js"></script>
+    <script src="card_logic.js"></script>
+    <script src="ai_logic.js"></script>
+    <script src="ui_manager.js"></script>
+    <script src="game_engine.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            background: #000;
+            font-family: 'Orbitron', monospace;
+            overflow: auto;
+        }
+        
+        /* Clean screen background */
+        .crt-screen {
+            background: linear-gradient(180deg, #001a2e 0%, #003366 50%, #001a2e 100%);
+            position: relative;
+        }
+        
+        /* Game board styling - scaled for 28x28 grid */
+        .game-board {
+            width: 840px;
+            height: 840px;
+            background: #000;
+            border: 2px solid #00ffff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .grid-cell {
+            width: 30px;
+            height: 30px;
+            transition: all 0.1s ease;
+        }
+        
+        /* Player colors - more vibrant retro style */
+        .territory-1 { background: #ff0080 !important; }
+        .territory-2 { background: #00ff80 !important; }
+        .territory-3 { background: #8000ff !important; }
+        .territory-4 { background: #ff8000 !important; }
+        
+        /* Obstacle styles - Large formations */
+        .obstacle-mountain {
+            background: linear-gradient(135deg, #4a4a4a 0%, #666666 25%, #5a5a5a 50%, #444444 75%, #3a3a3a 100%) !important;
+            border: 1px solid #777777;
+            box-shadow: 
+                inset 2px 2px 4px rgba(255, 255, 255, 0.3),
+                inset -2px -2px 4px rgba(0, 0, 0, 0.5),
+                0 0 8px rgba(100, 100, 100, 0.4);
+            position: relative;
+        }
+        
+        .obstacle-mountain::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: linear-gradient(45deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.1) 25%, 
+                transparent 50%, 
+                rgba(255, 255, 255, 0.05) 75%, 
+                transparent 100%);
+            pointer-events: none;
+        }
+        
+        .obstacle-acid {
+            background: radial-gradient(circle at 30% 30%, #44ff44 0%, #33cc33 30%, #22aa22 70%, #116611 100%) !important;
+            border: 1px solid #00ff00;
+            box-shadow: 
+                0 0 12px rgba(0, 255, 0, 0.6),
+                inset 0 0 8px rgba(0, 255, 0, 0.3);
+            animation: acid-bubble 3s infinite;
+            position: relative;
+        }
+        
+        .obstacle-acid::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: acid-bubble-shift 4s infinite;
+        }
+        
+        .obstacle-acid::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            right: 5px;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: acid-bubble-shift 3s infinite reverse;
+        }
+        
+        @keyframes acid-bubble {
+            0%, 100% { 
+                box-shadow: 0 0 12px rgba(0, 255, 0, 0.6), inset 0 0 8px rgba(0, 255, 0, 0.3);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.9), inset 0 0 12px rgba(0, 255, 0, 0.5);
+                transform: scale(1.02);
+            }
+        }
+        
+        @keyframes acid-bubble-shift {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+        
+        /* Balls - scaled 50% larger */
+        .ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 10px currentColor;
+            border: 2px solid #ffffff;
+        }
+        .ball-p1 { background: #ff0080; color: #ff0080; }
+        .ball-p2 { background: #00ff80; color: #00ff80; }
+        .ball-p3 { background: #8000ff; color: #8000ff; }
+        .ball-p4 { background: #ff8000; color: #ff8000; }
+        
+        /* Buildings - scaled 50% larger */
+        .castle, .building {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            font-size: 15px;
+            text-shadow: 0 0 5px currentColor;
+        }
+        
+        .castle {
+            width: 24px;
+            height: 24px;
+            background: #ffff00;
+            border: 1px solid #fff;
+            color: #000;
+        }
+        
+        .building {
+            width: 21px;
+            height: 21px;
+            background: #00ffff;
+            border: 1px solid #fff;
+            color: #000;
+        }
+        
+        /* Obstacle icons */
+        .obstacle-icon {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            z-index: 3;
+            top: 3px;
+            left: 3px;
+            text-shadow: 0 0 5px currentColor;
+        }
+        
+        .mountain-icon {
+            color: #cccccc;
+        }
+        
+        .acid-icon {
+            color: #00ff00;
+        }
+        
+        /* Retro UI panels */
+        .retro-panel {
+            background: linear-gradient(135deg, #001122 0%, #002244 100%);
+            border: 2px solid #00ffff;
+            border-radius: 4px;
+            box-shadow: 
+                inset 0 0 10px rgba(0, 255, 255, 0.2),
+                0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        
+        .retro-text {
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .retro-button {
+            background: linear-gradient(135deg, #003366 0%, #006699 100%);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            text-shadow: 0 0 5px #00ffff;
+            cursor: pointer;
+        }
+        
+        .retro-button:hover {
+            background: linear-gradient(135deg, #006699 0%, #0099cc 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            transform: translateY(-1px);
+        }
+        
+        .retro-button:active {
+            transform: translateY(0);
+        }
+        
+        /* Status bars */
+        .status-bar {
+            height: 12px;
+            background: #000;
+            border: 1px solid #00ffff;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .status-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Updated Card styling for real images */
+        .card {
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .card-selected {
+            border-color: #ff0080;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.8);
+            transform: scale(1.05);
+        }
+        
+        /* Card image styling */
+        .card-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+        }
+        
+        .card-image-large {
+            width: 160px;
+            height: 240px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+        }
+        
+        /* Hand card styling with real images */
+        .hand-card {
+            width: 64px;
+            height: 96px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border: 2px solid #00ffff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hand-card:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .hand-card.selected {
+            border-color: #ff0080;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.8);
+            transform: scale(1.05);
+        }
+        
+        .hand-card-image {
+            width: 60px;
+            height: 92px;
+            object-fit: cover;
+            border-radius: 2px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+        }
+        
+        .hand-card-cost {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffff00;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 1px 3px;
+            border-radius: 3px;
+            border: 1px solid #ffff00;
+        }
+        
+        /* Deck builder modal */
+        .deck-builder {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(5px);
+        }
+        
+        /* HP dots - scaled 50% larger */
+        .hp-dots {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1px;
+            z-index: 6;
+        }
+        
+        .hp-dot {
+            width: 3px;
+            height: 3px;
+            background: #ffff00;
+            border-radius: 50%;
+            box-shadow: 0 0 3px #ffff00;
+        }
+        
+        .hp-dot.damaged {
+            background: #333;
+            box-shadow: none;
+        }
+        
+        /* Building tooltip */
+        .building-tooltip {
+            background: rgba(0, 17, 34, 0.98);
+            border: 2px solid #00ffff;
+            border-radius: 4px;
+            color: #00ffff;
+            font-size: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            z-index: 1001;
+        }
+        
+        /* Clean scanlines removed */
+        .scanlines {
+            position: relative;
+        }
+        
+        /* Tooltip styling */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+        
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 17, 34, 0.98);
+            border: 1px solid #00ffff;
+            border-radius: 4px;
+            color: #00ffff;
+            font-size: 11px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            z-index: 1001;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            pointer-events: none;
+            margin-bottom: 5px;
+        }
+        
+        [title]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #00ffff;
+            z-index: 1001;
+            pointer-events: none;
+        }
+        
+        .cursor-icon {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 24px;
+            text-shadow: 0 0 10px currentColor;
+            transform: translate(-50%, -50%);
+        }
+        
+        .cursor-image {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            width: 40px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 2px solid #ff0080;
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.8);
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Animation for blinking elements */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        /* Compact layout adjustments */
+        .compact-stat {
+            font-size: 11px;
+            line-height: 1.2;
+        }
+        
+        .mini-card {
+            width: 120px;
+            height: 180px;
+        }
+        
+        .mini-card .card-image {
+            width: 116px;
+            height: 120px;
+        }
+        
+        .mini-card .card-name {
+            font-size: 10px;
+        }
+        
+        .mini-card .card-cost {
+            font-size: 11px;
+        }
+        
+        /* Info bar width to match game board */
+        .info-bar {
+            width: 840px;
+        }
+        
+        /* Card collection modal styling */
+        .card-collection-item {
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .card-collection-item:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .card-rarity-common { border-color: #9ca3af; }
+        .card-rarity-uncommon { border-color: #10b981; }
+        .card-rarity-rare { border-color: #3b82f6; }
+        .card-rarity-epic { border-color: #8b5cf6; }
+        .card-rarity-legendary { border-color: #f59e0b; }
+        
+        .card-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff0080;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 2px solid #ffffff;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        
+        .craft-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 1px solid #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .craft-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+        }
+        
+        .craft-btn:disabled {
+            background: #374151;
+            border-color: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .destroy-btn {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            border: 1px solid #dc2626;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .destroy-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+            transform: translateY(-1px);
+        }
+        
+        .destroy-btn:disabled {
+            background: #374151;
+            border-color: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        /* End game modal styling */
+        .player-ranking {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .rank-1 { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #000; }
+        .rank-2 { background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%); color: #000; }
+        .rank-3 { background: linear-gradient(135deg, #CD7F32 0%, #A0522D 100%); color: #fff; }
+        .rank-4 { background: linear-gradient(135deg, #444444 0%, #666666 100%); color: #fff; }
+        
+        .dust-reward {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+        
+        .dust-earned {
+            color: #ffff00;
+            font-weight: bold;
+        }
+        
+        /* Territory meter for larger grid */
+        .territory-meter {
+            width: 180px;
+            height: 20px;
+        }
+        
+        /* Image fallback styling */
+        .image-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #00ffff;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+        }
+        
+        /* Updated Deck Builder Styles - Removed stats, focus on description */
+        .deck-builder-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #ffffff;
+            background: #000000;
+            padding: 16px 32px;
+            border-radius: 8px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .deck-builder-divider {
+            display: flex;
+            align-items: center;
+            margin: 32px 0;
+            width: 100%;
+        }
+
+        .deck-builder-divider::before,
+        .deck-builder-divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffffff, transparent);
+        }
+
+        .deck-builder-divider-icon {
+            margin: 0 20px;
+            font-size: 32px;
+            color: #ffffff;
+        }
+
+        .deck-builder-instruction {
+            color: #ffffff;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        .deck-builder-large-card {
+            width: 256px;
+            height: 450px;
+            background: transparent;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+        }
+
+        .deck-builder-large-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .deck-builder-large-card.selected {
+            transform: scale(1.05);
+        }
+
+        .deck-builder-large-card-image {
+            width: 256px;
+            height: 384px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border-radius: 8px;
+            border: none;
+        }
+
+        .deck-builder-large-card.selected .deck-builder-large-card-image {
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.8);
+        }
+
+        /* Updated card stats section - now focuses on description only */
+        .deck-builder-card-stats {
+            padding: 12px 8px;
+            background: transparent;
+            text-align: center;
+            height: auto;
+            min-height: 66px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            margin-top: 8px;
+        }
+
+        .deck-builder-card-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.2;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .deck-builder-card-description {
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.4;
+            text-align: center;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .deck-builder-cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .deck-builder-finish-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 3px solid #10b981;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .deck-builder-finish-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* Deck builder specific styles */
+        .deck-builder-card {
+            width: 200px;
+            height: 280px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 12px;
+        }
+        
+        .deck-builder-card:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .deck-builder-card-image {
+            width: 176px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+        }
+        
+        .deck-builder-progress {
+            background: linear-gradient(135deg, #001122 0%, #003366 100%);
+            border: 2px solid #00ffff;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #000;
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0080, #00ffff);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        /* Select cards title styling */
+        .select-cards-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            background: linear-gradient(135deg, #000 0%, #222 100%);
+            border: 3px solid #00ffff;
+            padding: 16px 32px;
+            border-radius: 8px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Divider with icon */
+        .icon-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        .icon-divider::before,
+        .icon-divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+        }
+
+        .icon-divider-icon {
+            margin: 0 16px;
+            font-size: 24px;
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+        }
+
+        /* Card stats styling */
+        .card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid #00ffff;
+        }
+
+        .stat-item {
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .stat-label {
+            color: #00ffff;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            color: #ffff00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="text-cyan-400 font-mono bg-black">
+    <!-- Building Tooltip -->
+    <div id="buildingTooltip" class="building-tooltip absolute" style="display: none;">
+        <div class="p-2">
+            <div class="flex items-center gap-1 mb-1">
+                <span id="tooltipEmoji" class="text-sm"></span>
+                <span id="tooltipName" class="text-xs font-bold"></span>
+            </div>
+            <div id="tooltipDescription" class="text-xs mb-1 text-cyan-300"></div>
+            <div class="flex justify-between text-xs">
+                <span>HP: <span id="tooltipHealth"></span></span>
+                <span>💰<span id="tooltipCost"></span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Collection Modal -->
+    <div id="cardCollectionModal" class="deck-builder fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="retro-panel p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 class="retro-text text-center text-2xl mb-4">🃏 CARD COLLECTION 🃏</h2>
+            
+            <div class="text-center mb-4">
+                <div class="retro-text text-lg mb-2">
+                    Lunar Dust: <span id="collectionDustDisplay" class="text-yellow-400">0</span>
+                </div>
+                <div class="retro-text text-sm text-cyan-300">
+                    Total Cards: <span id="totalCardsCount">0</span> | 
+                    Craft Cost: <span class="text-yellow-400">300 🌙</span> | 
+                    Destroy Value: <span class="text-red-400">100 🌙</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6" id="cardGrid">
+                <!-- Cards will be populated here -->
+            </div>
+            
+            <div class="text-center">
+                <button id="closeCardCollection" class="retro-button px-6 py-2 rounded">
+                    CLOSE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Game Results Modal -->
+    <div id="endGameModal" class="deck-builder fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="retro-panel p-6 max-w-2xl w-full mx-4">
+            <h2 class="retro-text text-center text-2xl mb-4">⚡ GAME OVER ⚡</h2>
+            
+            <div class="text-center mb-6">
+                <div id="gameWinner" class="text-xl retro-text mb-2"></div>
+                <div id="gameStats" class="text-sm text-cyan-300"></div>
+            </div>
+            
+            <div class="space-y-3 mb-6">
+                <div class="text-center retro-text text-lg mb-3">FINAL STANDINGS</div>
+                
+                <div id="playerRankings" class="space-y-2">
+                    <!-- Player rankings will be populated here -->
+                </div>
+            </div>
+            
+            <div class="border-t border-cyan-500 pt-4 mb-4">
+                <div class="text-center retro-text text-lg mb-3">🌙 LUNAR DUST REWARDS 🌙</div>
+                <div id="dustRewards" class="space-y-2">
+                    <!-- Dust rewards will be populated here -->
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <div class="retro-text text-sm mb-3">
+                    Total Lunar Dust: <span id="totalDustDisplay" class="text-yellow-400">0</span>
+                </div>
+                <button id="closeEndGameModal" class="retro-button px-6 py-2 rounded">
+                    CONTINUE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deck Builder Modal -->
+    <div id="deckBuilder" class="deck-builder fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="max-w-7xl w-full mx-4 max-h-[95vh] overflow-y-auto p-8">
+            <!-- Title -->
+            <div class="text-center mb-8">
+                <h1 class="deck-builder-title">Select Cards</h1>
+            </div>
+            
+            <!-- Divider with Icon -->
+            <div class="deck-builder-divider">
+                <div class="deck-builder-divider-icon">🚀</div>
+            </div>
+            
+            <!-- Instruction Text -->
+            <div class="text-center mb-12">
+                <p class="deck-builder-instruction">Select one card</p>
+            </div>
+            
+            <!-- Card Selection Area -->
+            <div id="cardSelection" class="deck-builder-cards-container">
+                <!-- Cards will be populated here -->
+            </div>
+            
+            <div class="text-center">
+                <button id="finishDeck" class="deck-builder-finish-btn hidden">
+                    🚀 Deploy Deck 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Interface -->
+    <div class="crt-screen min-h-screen p-2">
+
+        <div class="flex min-h-full">
+            <!-- Center - Game Board and Hand Cards -->
+            <div class="flex items-start justify-center flex-1">
+                <!-- Info Bar Above Game Board -->
+                <div class="flex flex-col">
+                    <div class="retro-panel p-2 mb-2 info-bar">
+                        <div class="flex justify-between items-center text-xs">
+                            <!-- Left section -->
+                            <div class="flex gap-2">
+                                <button id="startBtn" class="retro-button px-2 py-1 text-xs rounded" style="font-size: 10px;" title="Start the game">START</button>
+                                <button id="deckOrCardsBtn" class="retro-button px-2 py-1 text-xs rounded" style="font-size: 10px;" title="Build deck or view cards">DECK</button>
+                            </div>
+                            
+                            <!-- Center section -->
+                            <div class="flex items-center gap-6">
+                                <span class="retro-text" title="Lunar Dust - persistent currency">🌙<span id="lunar-dust" class="text-yellow-400">0</span></span>
+                                <span class="retro-text" title="Coins available to spend">💰<span id="p1-coins" class="text-yellow-400">10</span></span>
+                                <span class="retro-text" title="Balls currently in play">⚽<span id="p1-balls" class="text-white">3</span></span>
+                                <div id="timer" class="text-lg blink retro-text" title="Time remaining in game">4:00</div>
+                                <span class="retro-text" title="Cards in hand / Total deck size">🃏<span id="deck-count" class="text-green-400">0/12</span></span>
+                                <span class="retro-text" title="Current tax rate percentage">💰<span id="tax-percentage" class="text-orange-400">0%</span></span>
+                            </div>
+                            
+                            <!-- Right section - Territory meter -->
+                            <div class="flex items-center">
+                                <div class="status-bar territory-meter" title="Territory control by player (Pink/Green/Purple/Orange)">
+                                    <div id="territory-meter" class="flex h-full">
+                                        <div class="territory-1 transition-all duration-300" style="width: 25%"></div>
+                                        <div class="territory-2 transition-all duration-300" style="width: 25%"></div>
+                                        <div class="territory-3 transition-all duration-300" style="width: 25%"></div>
+                                        <div class="territory-4 transition-all duration-300" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden tax meter for JavaScript compatibility -->
+                            <div id="tax-meter" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex">
+                        <div id="gameBoard" class="game-board relative">
+                            <!-- Grid cells will be generated here -->
+                        </div>
+                        
+                        <!-- Right Panel - Hand Cards (attached to game board) -->
+                        <div class="ml-2">
+                            <div class="retro-text text-xs mb-2 text-center">Hand</div>
+                            <div id="handCards" class="flex flex-col gap-1">
+                                <div class="text-center text-cyan-600 text-xs py-4 w-full">
+                                    BUILD DECK TO START
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom cursor for building -->
+        <div id="customCursor" class="cursor-icon" style="display: none;"></div>
+        <img id="customCursorImage" class="cursor-image" style="display: none;" alt="Card cursor">
+    </div>
+
+    <script>
+        // Updated UI Manager functions to handle card images
+        const ImageUIManager = {
+            // Create card element with real images
+            createCardElement(card, isHandCard = false) {
+                const cardDiv = document.createElement('div');
+                
+                if (isHandCard) {
+                    cardDiv.className = 'hand-card';
+                    cardDiv.dataset.cardId = card.id;
+                    cardDiv.addEventListener('click', () => this.selectHandCard(card));
+                    
+                    // Add hover events for hand cards
+                    cardDiv.addEventListener('mouseenter', (e) => {
+                        this.showCardTooltip(card, e);
+                    });
+                    
+                    cardDiv.addEventListener('mouseleave', () => {
+                        this.hideCardTooltip();
+                    });
+                    
+                    // Create image element
+                    const img = document.createElement('img');
+                    img.className = 'hand-card-image';
+                    img.src = `cards/${card.id}.png`;
+                    img.alt = card.name;
+                    img.onerror = () => {
+                        // Fallback to emoji if image fails to load
+                        img.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'image-fallback hand-card-image';
+                        fallback.innerHTML = card.emoji;
+                        cardDiv.appendChild(fallback);
+                    };
+                    
+                    // Add cost overlay
+                    const costDiv = document.createElement('div');
+                    costDiv.className = 'hand-card-cost';
+                    costDiv.textContent = card.cost;
+                    
+                    cardDiv.appendChild(img);
+                    cardDiv.appendChild(costDiv);
+                } else if (cardDiv.classList.contains('deck-builder-card')) {
+                    // Special handling for deck builder cards - cyberpunk style
+                    const cardContainer = document.createElement('div');
+                    cardContainer.className = 'deck-card-container';
+                    
+                    cardDiv.className = 'deck-builder-card';
+                    
+                    const img = document.createElement('img');
+                    img.className = 'deck-builder-card-image';
+                    img.src = `cards/${card.id}.png`;
+                    img.alt = card.name;
+                    img.onerror = () => {
+                        // Fallback to emoji if image fails to load
+                        img.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'image-fallback deck-builder-card-image';
+                        fallback.innerHTML = card.emoji;
+                        fallback.style.fontSize = '64px';
+                        cardDiv.appendChild(fallback);
+                    };
+                    
+                    cardDiv.appendChild(img);
+                    
+                    // Name label below card
+                    const nameLabel = document.createElement('div');
+                    nameLabel.className = 'card-name-label';
+                    nameLabel.innerHTML = `
+                        <div class="card-name-title">${card.name}</div>
+                        <div class="card-name-description">${card.description}</div>
+                    `;
+                    
+                    cardContainer.appendChild(cardDiv);
+                    cardContainer.appendChild(nameLabel);
+                    
+                    return cardContainer;
+                } else {
+                    // For deck builder and collection
+                    cardDiv.className = 'card p-3 text-center mini-card';
+                    
+                    const img = document.createElement('img');
+                    img.className = 'card-image';
+                    img.src = `cards/${card.id}.png`;
+                    img.alt = card.name;
+                    img.onerror = () => {
+                        // Fallback to emoji if image fails to load
+                        img.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'image-fallback card-image';
+                        fallback.innerHTML = card.emoji;
+                        cardDiv.appendChild(fallback);
+                    };
+                    
+                    cardDiv.innerHTML = `
+                        <div class="mb-2"></div>
+                        <div class="retro-text text-xs mb-1 card-name">${card.name}</div>
+                        <div class="text-xs text-cyan-300 mb-1" style="height: 30px; overflow: hidden; font-size: 8px;">${card.description}</div>
+                        <div class="text-yellow-400 font-bold text-xs card-cost">💰 ${card.cost}</div>
+                    `;
+                    
+                    cardDiv.insertBefore(img, cardDiv.firstChild);
+                }
+                
+                return cardDiv;
+            },
+
+            // Create deck builder card element (updated to show only name and description)
+            createDeckBuilderCardElement(card) {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'deck-builder-large-card';
+                cardDiv.dataset.cardId = card.id;
+                
+                // Card image
+                const img = document.createElement('img');
+                img.className = 'deck-builder-large-card-image';
+                img.src = `cards/${card.id}.png`;
+                img.alt = card.name;
+                img.onerror = () => {
+                    // Fallback to emoji if image fails to load
+                    img.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'image-fallback deck-builder-large-card-image';
+                    fallback.innerHTML = card.emoji;
+                    fallback.style.fontSize = '80px';
+                    cardDiv.appendChild(fallback);
+                };
+                
+                // Card info section - only name and description
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'deck-builder-card-stats';
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'deck-builder-card-name';
+                nameDiv.textContent = card.name;
+                
+                const descriptionDiv = document.createElement('div');
+                descriptionDiv.className = 'deck-builder-card-description';
+                descriptionDiv.textContent = card.description;
+                
+                infoDiv.appendChild(nameDiv);
+                infoDiv.appendChild(descriptionDiv);
+                
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(infoDiv);
+                
+                return cardDiv;
+            },
+
+            // Select card from hand (updated for image cursor)
+            selectHandCard(card) {
+                if (!window.gameState.running) return;
+                
+                if (window.gameState.selectedCard && window.gameState.selectedCard.id === card.id) {
+                    this.clearCardSelection();
+                    return;
+                }
+                
+                window.gameState.selectedCard = card;
+                
+                document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+                document.querySelector(`[data-card-id="${card.id}"]`).classList.add('selected');
+                
+                const gameBoard = document.getElementById('gameBoard');
+                const customCursor = document.getElementById('customCursor');
+                const customCursorImage = document.getElementById('customCursorImage');
+                
+                gameBoard.classList.add('building-cursor');
+                
+                // Try to use image cursor first
+                customCursorImage.src = `cards/${card.id}.png`;
+                customCursorImage.style.display = 'block';
+                customCursor.style.display = 'none';
+                
+                // Fallback to emoji cursor if image fails
+                customCursorImage.onerror = () => {
+                    customCursorImage.style.display = 'none';
+                    customCursor.style.display = 'block';
+                    customCursor.innerHTML = card.emoji;
+                };
+            },
+
+            // Clear card selection (updated for image cursor)
+            clearCardSelection() {
+                window.gameState.selectedCard = null;
+                document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('gameBoard').classList.remove('building-cursor');
+                document.getElementById('customCursor').style.display = 'none';
+                document.getElementById('customCursorImage').style.display = 'none';
+            },
+
+            // Update custom cursor position (updated for image cursor)
+            updateCustomCursor(e) {
+                if (window.gameState.selectedCard) {
+                    const cursor = document.getElementById('customCursor');
+                    const cursorImage = document.getElementById('customCursorImage');
+                    
+                    cursor.style.left = e.clientX + 'px';
+                    cursor.style.top = e.clientY + 'px';
+                    cursorImage.style.left = e.clientX + 'px';
+                    cursorImage.style.top = e.clientY + 'px';
+                }
+            },
+
+            // Update collection display with images
+            updateCollectionDisplay() {
+                const cardGrid = document.getElementById('cardGrid');
+                const dustDisplay = document.getElementById('collectionDustDisplay');
+                const totalCardsDisplay = document.getElementById('totalCardsCount');
+                
+                if (!cardGrid) return;
+                
+                const currentDust = window.LunarDust.getDust();
+                const totalCards = window.CardCollection.getTotalCards();
+                
+                dustDisplay.textContent = currentDust;
+                totalCardsDisplay.textContent = totalCards;
+                
+                cardGrid.innerHTML = '';
+                
+                window.LunarCards.CARD_POOL.forEach(card => {
+                    const cardCount = window.CardCollection.getCardCount(card.id);
+                    const canCraft = currentDust >= window.CardCollection.CRAFT_COST;
+                    const canDestroy = cardCount > 0 && totalCards > window.CardCollection.MIN_CARDS;
+                    
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = `card-collection-item card-rarity-${card.rarity}`;
+                    
+                    const img = document.createElement('img');
+                    img.className = 'card-image-large mx-auto mb-2';
+                    img.src = `cards/${card.id}.png`;
+                    img.alt = card.name;
+                    img.onerror = () => {
+                        // Fallback to emoji if image fails to load
+                        img.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'image-fallback card-image-large mx-auto mb-2';
+                        fallback.innerHTML = card.emoji;
+                        fallback.style.fontSize = '48px';
+                        cardDiv.appendChild(fallback);
+                    };
+                    
+                    cardDiv.innerHTML = `
+                        <div class="card-count">${cardCount}</div>
+                        <div class="retro-text text-xs mb-2">${card.name}</div>
+                        <div class="text-xs text-cyan-300 mb-2" style="height: 40px; overflow: hidden;">${card.description}</div>
+                        <div class="text-xs mb-2">
+                            <div class="text-yellow-400">💰 ${card.cost}</div>
+                            <div class="text-green-400">❤️ ${card.hp}</div>
+                            <div class="text-purple-400">${card.rarity}</div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="craft-btn" data-card-id="${card.id}" ${!canCraft ? 'disabled' : ''}>
+                                CRAFT (300🌙)
+                            </button>
+                            <button class="destroy-btn" data-card-id="${card.id}" ${!canDestroy ? 'disabled' : ''}>
+                                DESTROY (100🌙)
+                            </button>
+                        </div>
+                    `;
+                    
+                    cardDiv.insertBefore(img, cardDiv.children[1]);
+                    cardGrid.appendChild(cardDiv);
+                });
+                
+                // Add event listeners for craft/destroy buttons
+                cardGrid.querySelectorAll('.craft-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const cardId = e.target.dataset.cardId;
+                        if (window.CardCollection.craftCard(cardId)) {
+                            // Success feedback could be added here
+                        }
+                    });
+                });
+                
+                cardGrid.querySelectorAll('.destroy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const cardId = e.target.dataset.cardId;
+                        if (window.CardCollection.destroyCard(cardId)) {
+                            // Success feedback could be added here
+                        }
+                    });
+                });
+            },
+
+            // Update hand display
+            updateHandDisplay() {
+                const handDiv = document.getElementById('handCards');
+                handDiv.innerHTML = '';
+                
+                const playerHand = window.gameState.players[0].hand;
+                
+                if (playerHand.length === 0) {
+                    handDiv.innerHTML = '<div class="text-center text-cyan-600 text-xs py-4 w-full">NO CARDS</div>';
+                    return;
+                }
+                
+                playerHand.forEach(card => {
+                    const cardElement = this.createCardElement(card, true);
+                    handDiv.appendChild(cardElement);
+                });
+            },
+
+            // Show card tooltip (for hand cards) - keep emoji in tooltip
+            showCardTooltip(card, event) {
+                const tooltip = document.getElementById('buildingTooltip');
+                const tooltipEmoji = document.getElementById('tooltipEmoji');
+                const tooltipName = document.getElementById('tooltipName');
+                const tooltipHealth = document.getElementById('tooltipHealth');
+                const tooltipDescription = document.getElementById('tooltipDescription');
+                const tooltipCost = document.getElementById('tooltipCost');
+                
+                // Set tooltip content for card (keep emoji for tooltip)
+                tooltipEmoji.textContent = card.emoji;
+                tooltipName.textContent = card.name;
+                tooltipHealth.textContent = `${card.hp} HP`;
+                tooltipDescription.textContent = card.description;
+                tooltipCost.textContent = card.cost;
+                
+                // Position tooltip
+                const rect = event.target.getBoundingClientRect();
+                let left = rect.right + 10;
+                let top = rect.top;
+                
+                // Adjust if tooltip goes off screen
+                if (left + 120 > window.innerWidth) left = rect.left - 120;
+                if (top + 80 > window.innerHeight) top = window.innerHeight - 90;
+                
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+                tooltip.style.display = 'block';
+            },
+
+            hideCardTooltip() {
+                document.getElementById('buildingTooltip').style.display = 'none';
+            },
+
+            // Building tooltip functions - keep emoji in tooltip
+            showBuildingTooltip(building, event) {
+                const tooltip = document.getElementById('buildingTooltip');
+                const tooltipEmoji = document.getElementById('tooltipEmoji');
+                const tooltipName = document.getElementById('tooltipName');
+                const tooltipHealth = document.getElementById('tooltipHealth');
+                const tooltipDescription = document.getElementById('tooltipDescription');
+                const tooltipCost = document.getElementById('tooltipCost');
+                
+                // Set tooltip content (keep emoji for tooltip)
+                tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
+                tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
+                tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
+                tooltipDescription.textContent = building.cardData ? building.cardData.description : 'Basic structure';
+                tooltipCost.textContent = building.cardData ? building.cardData.cost : '0';
+                
+                // Position tooltip
+                const rect = event.target.getBoundingClientRect();
+                
+                let left = rect.left + rect.width / 2 - 50;
+                let top = rect.top - 80;
+                
+                // Adjust if tooltip goes off screen
+                if (left < 10) left = 10;
+                if (left + 100 > window.innerWidth - 10) left = window.innerWidth - 110;
+                if (top < 10) top = rect.bottom + 10;
+                
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+                tooltip.style.display = 'block';
+            },
+            
+            hideBuildingTooltip() {
+                document.getElementById('buildingTooltip').style.display = 'none';
+            }
+        };
+
+        // Override the UIManager functions when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lunar Dust system FIRST
+            window.LunarDust = {
+                // Get current dust amount
+                getDust() {
+                    const dust = localStorage.getItem('lunarConquestDust');
+                    return dust ? parseInt(dust) : 0;
+                },
+                
+                // Add dust to player's total
+                addDust(amount) {
+                    const currentDust = this.getDust();
+                    const newDust = currentDust + amount;
+                    localStorage.setItem('lunarConquestDust', newDust.toString());
+                    this.updateDisplay();
+                    return newDust;
+                },
+                
+                // Update dust display
+                updateDisplay() {
+                    const dustDisplay = document.getElementById('lunar-dust');
+                    if (dustDisplay) {
+                        dustDisplay.textContent = this.getDust();
+                    }
+                    const totalDustDisplay = document.getElementById('totalDustDisplay');
+                    if (totalDustDisplay) {
+                        totalDustDisplay.textContent = this.getDust();
+                    }
+                },
+                
+                // Calculate rewards based on rankings
+                calculateRewards(rankings) {
+                    const rewards = [];
+                    
+                    rankings.forEach((player, index) => {
+                        let dustEarned = 0;
+                        let rewardText = '';
+                        
+                        switch (index) {
+                            case 0: // 1st place
+                                dustEarned = player.territory;
+                                rewardText = `🥇 WINNER! +${dustEarned} Dust (Territory Controlled)`;
+                                break;
+                            case 1: // 2nd place
+                                dustEarned = 50;
+                                rewardText = `🥈 2nd Place! +${dustEarned} Dust`;
+                                break;
+                            case 2: // 3rd place
+                                dustEarned = 10;
+                                rewardText = `🥉 3rd Place! +${dustEarned} Dust`;
+                                break;
+                            case 3: // 4th place
+                                dustEarned = 0;
+                                rewardText = `4th Place - No Reward`;
+                                break;
+                        }
+                        
+                        rewards.push({
+                            player: player,
+                            dustEarned: dustEarned,
+                            rewardText: rewardText,
+                            rank: index + 1
+                        });
+                    });
+                    
+                    return rewards;
+                }
+            };
+            
+            // Initialize dust display
+            window.LunarDust.updateDisplay();
+
+            // Initialize Card Collection system
+            window.CardCollection = {
+                CRAFT_COST: 300,
+                DESTROY_VALUE: 100,
+                MIN_CARDS: 14,
+                
+                // Get current card collection
+                getCollection() {
+                    const collection = localStorage.getItem('lunarConquestCollection');
+                    return collection ? JSON.parse(collection) : {};
+                },
+                
+                // Save collection
+                saveCollection(collection) {
+                    localStorage.setItem('lunarConquestCollection', JSON.stringify(collection));
+                },
+                
+                // Get card count
+                getCardCount(cardId) {
+                    const collection = this.getCollection();
+                    return collection[cardId] || 0;
+                },
+                
+                // Add card to collection
+                addCard(cardId, count = 1) {
+                    const collection = this.getCollection();
+                    collection[cardId] = (collection[cardId] || 0) + count;
+                    this.saveCollection(collection);
+                },
+                
+                // Remove card from collection
+                removeCard(cardId, count = 1) {
+                    const collection = this.getCollection();
+                    if (collection[cardId]) {
+                        collection[cardId] = Math.max(0, collection[cardId] - count);
+                        if (collection[cardId] === 0) {
+                            delete collection[cardId];
+                        }
+                        this.saveCollection(collection);
+                    }
+                },
+                
+                // Get total card count
+                getTotalCards() {
+                    const collection = this.getCollection();
+                    return Object.values(collection).reduce((sum, count) => sum + count, 0);
+                },
+                
+                // Check if player has enough cards to play
+                hasEnoughCards() {
+                    return this.getTotalCards() >= this.MIN_CARDS;
+                },
+                
+                // Initialize collection from old deck system
+                initializeFromOldDeck() {
+                    const savedDeck = localStorage.getItem('lunarConquestDeck');
+                    if (savedDeck) {
+                        try {
+                            const deck = JSON.parse(savedDeck);
+                            const collection = {};
+                            
+                            // Convert old deck to collection
+                            deck.forEach(card => {
+                                collection[card.id] = (collection[card.id] || 0) + 1;
+                            });
+                            
+                            this.saveCollection(collection);
+                            
+                            // Remove old deck storage
+                            localStorage.removeItem('lunarConquestDeck');
+                            
+                            return true;
+                        } catch (e) {
+                            console.error('Error converting old deck:', e);
+                        }
+                    }
+                    return false;
+                },
+                
+                // Craft a card
+                craftCard(cardId) {
+                    const currentDust = window.LunarDust.getDust();
+                    if (currentDust >= this.CRAFT_COST) {
+                        // Deduct dust
+                        localStorage.setItem('lunarConquestDust', (currentDust - this.CRAFT_COST).toString());
+                        
+                        // Add card to collection
+                        this.addCard(cardId, 1);
+                        
+                        // Update displays
+                        window.LunarDust.updateDisplay();
+                        this.updateCollectionDisplay();
+                        
+                        // Update game state if player has a deck loaded
+                        this.refreshGameDeck();
+                        
+                        return true;
+                    }
+                    return false;
+                },
+                
+                // Destroy a card
+                destroyCard(cardId) {
+                    const totalCards = this.getTotalCards();
+                    const cardCount = this.getCardCount(cardId);
+                    
+                    if (cardCount > 0 && totalCards > this.MIN_CARDS) {
+                        // Remove card from collection
+                        this.removeCard(cardId, 1);
+                        
+                        // Add dust
+                        window.LunarDust.addDust(this.DESTROY_VALUE);
+                        
+                        // Update displays
+                        this.updateCollectionDisplay();
+                        
+                        // Update game state if player has a deck loaded
+                        this.refreshGameDeck();
+                        
+                        return true;
+                    }
+                    return false;
+                },
+                
+                // Refresh the game deck when collection changes
+                refreshGameDeck() {
+                    if (window.gameState && window.gameState.players[0]) {
+                        // Only refresh if not currently in a game
+                        if (!window.gameState.running) {
+                            window.GameState.checkPlayerDeck();
+                            if (window.UIManager) {
+                                window.UIManager.updateHandDisplay();
+                                window.UIManager.updateUI();
+                            }
+                        }
+                    }
+                },
+                
+                // Generate deck from collection
+                generateDeckFromCollection() {
+                    const collection = this.getCollection();
+                    const deck = [];
+                    
+                    // Add all cards from collection
+                    for (const [cardId, count] of Object.entries(collection)) {
+                        const card = window.LunarCards.CARD_POOL.find(c => c.id === cardId);
+                        if (card) {
+                            for (let i = 0; i < count; i++) {
+                                deck.push({...card});
+                            }
+                        }
+                    }
+                    
+                    return deck;
+                },
+                
+                // Update collection display with images
+                updateCollectionDisplay() {
+                    return ImageUIManager.updateCollectionDisplay();
+                }
+            };
+            
+            // Try to migrate from old deck system first
+            const migratedFromOldDeck = window.CardCollection.initializeFromOldDeck();
+            
+            // Only give starting cards if player has no collection AND no old deck to migrate
+            if (!migratedFromOldDeck && window.CardCollection.getTotalCards() === 0) {
+                // Check if player previously had a deck by other means
+                const hasOtherProgress = window.LunarDust.getDust() > 0;
+                
+                if (!hasOtherProgress) {
+                    // This is truly a new player - they need to build their first deck
+                    // Don't give them cards automatically, they'll use the deck builder
+                }
+            }
+            
+            // Override specific UIManager functions with image versions
+            if (window.UIManager) {
+                window.UIManager.createCardElement = ImageUIManager.createCardElement;
+                window.UIManager.createDeckBuilderCardElement = ImageUIManager.createDeckBuilderCardElement;
+                window.UIManager.selectHandCard = ImageUIManager.selectHandCard;
+                window.UIManager.clearCardSelection = ImageUIManager.clearCardSelection;
+                window.UIManager.updateCustomCursor = ImageUIManager.updateCustomCursor;
+                window.UIManager.updateHandDisplay = ImageUIManager.updateHandDisplay;
+                window.UIManager.showCardTooltip = ImageUIManager.showCardTooltip;
+                window.UIManager.hideCardTooltip = ImageUIManager.hideCardTooltip;
+                window.UIManager.showBuildingTooltip = ImageUIManager.showBuildingTooltip;
+                window.UIManager.hideBuildingTooltip = ImageUIManager.hideBuildingTooltip;
+            }
+            
+            // Initialize game engine
+            window.GameEngine.initialize();
+        });
+    </script>
+</body>
+</html>
