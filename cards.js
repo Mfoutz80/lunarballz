@@ -74,9 +74,9 @@ const CARD_POOL = [
         type: 'building',
         cost: 25,
         hp: 6,
-        description: 'Generates 2 coins every 5 seconds',
+        description: 'Generates 2 coins every 2.5 seconds',
         effect: 'passive_income',
-        effectValue: 300, // 5 seconds at 60fps
+        effectValue: 150, // 5 seconds at 60fps
         rarity: 'common'
     },
     {
