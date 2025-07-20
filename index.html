@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Lunarballz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* RESET & BACKGROUND */
     html, body {
@@ -49,6 +50,7 @@
         -2px 2px 0 #000, 2px 2px 0 #000;
       cursor: pointer; box-shadow: 0 4px 0 #555;
       transition: transform .15s, box-shadow .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .game-button:hover {
       transform: translateY(-2px);
@@ -57,6 +59,116 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    .modal-overlay.active {
+      opacity: 1; visibility: visible;
+    }
+    .modal {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 3px solid #FFD54F; border-radius: 20px;
+      padding: 30px; max-width: 500px; width: 90%;
+      transform: scale(0.7); transition: transform 0.3s;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+    .modal-header {
+      text-align: center; margin-bottom: 25px;
+      font-size: 2rem; color: #FFD54F; font-weight: bold;
+    }
+    .setting-group {
+      margin-bottom: 20px; padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px; border: 1px solid rgba(255, 213, 79, 0.3);
+    }
+    .setting-label {
+      font-size: 1.1rem; color: #fff; margin-bottom: 10px;
+      display: block; font-weight: 600;
+    }
+    .slider-container {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .volume-slider {
+      flex: 1; height: 8px; border-radius: 5px;
+      background: #333; outline: none; cursor: pointer;
+      appearance: none;
+    }
+    .volume-slider::-webkit-slider-thumb {
+      appearance: none; width: 20px; height: 20px;
+      border-radius: 50%; background: #FFD54F;
+      cursor: pointer; border: 2px solid #000;
+    }
+    .volume-slider::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #FFD54F; cursor: pointer;
+      border: 2px solid #000;
+    }
+    .volume-value {
+      min-width: 40px; text-align: right;
+      color: #FFD54F; font-weight: bold;
+    }
+    .checkbox-container {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .custom-checkbox {
+      width: 20px; height: 20px; border: 2px solid #FFD54F;
+      border-radius: 4px; background: transparent;
+      cursor: pointer; position: relative;
+    }
+    .custom-checkbox.checked {
+      background: #FFD54F;
+    }
+    .custom-checkbox.checked::after {
+      content: '✓'; position: absolute;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #000; font-weight: bold; font-size: 14px;
+    }
+    .difficulty-buttons {
+      display: flex; gap: 10px; justify-content: center;
+    }
+    .difficulty-btn {
+      padding: 8px 16px; border: 2px solid #FFD54F;
+      background: transparent; color: #FFD54F;
+      border-radius: 8px; cursor: pointer;
+      transition: all 0.2s; font-weight: bold;
+    }
+    .difficulty-btn.active {
+      background: #FFD54F; color: #000;
+    }
+    .difficulty-btn:hover {
+      background: rgba(255, 213, 79, 0.2);
+    }
+    .modal-buttons {
+      display: flex; gap: 15px; justify-content: center;
+      margin-top: 30px;
+    }
+    .modal-btn {
+      padding: 12px 24px; border-radius: 10px;
+      font-weight: bold; cursor: pointer;
+      transition: all 0.2s; border: 2px solid;
+    }
+    .btn-save {
+      background: #4caf50; color: white; border-color: #4caf50;
+    }
+    .btn-save:hover {
+      background: #45a049;
+    }
+    .btn-cancel {
+      background: transparent; color: #ff6b6b; border-color: #ff6b6b;
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 107, 107, 0.1);
     }
 
     /* SVG DOWN-ARROW */
@@ -134,6 +246,8 @@
       .logo-container img { width: 80vw; }
       .game-button { width: 220px; font-size: 1.3rem; padding: 12px 0; }
       .down-arrow { width: 32px; height: 32px; }
+      .modal { padding: 20px; }
+      .difficulty-buttons { flex-direction: column; }
     }
   </style>
 </head>
@@ -146,11 +260,64 @@
       <img src="lunarballz-logo.png" alt="Lunarballz Logo">
     </div>
     <div class="button-container">
-      <button class="game-button">START</button>
-      <button class="game-button">OPTIONS</button>
-      <button class="game-button">EXIT</button>
+      <button class="game-button" onclick="window.location.href='lunar.html'">START</button>
+      <button class="game-button" onclick="openOptionsModal()">OPTIONS</button>
+      <button class="game-button" onclick="window.open('https://discord.gg/your-server', '_blank')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+        </svg>
+        DISCORD
+      </button>
     </div>
   </section>
+
+  <!-- OPTIONS MODAL -->
+  <div id="optionsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">Game Options</div>
+      
+      <!-- Sound Effects -->
+      <div class="setting-group">
+        <label class="setting-label">Sound Effects</label>
+        <div class="slider-container">
+          <input type="range" class="volume-slider" id="sfxVolume" min="0" max="100" value="50">
+          <span class="volume-value" id="sfxValue">50</span>
+        </div>
+        <div class="checkbox-container">
+          <div class="custom-checkbox" id="sfxEnabled" onclick="toggleCheckbox('sfxEnabled')"></div>
+          <label>Enable Sound Effects</label>
+        </div>
+      </div>
+
+      <!-- Music -->
+      <div class="setting-group">
+        <label class="setting-label">Music</label>
+        <div class="slider-container">
+          <input type="range" class="volume-slider" id="musicVolume" min="0" max="100" value="30">
+          <span class="volume-value" id="musicValue">30</span>
+        </div>
+        <div class="checkbox-container">
+          <div class="custom-checkbox" id="musicEnabled" onclick="toggleCheckbox('musicEnabled')"></div>
+          <label>Enable Music</label>
+        </div>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="setting-group">
+        <label class="setting-label">Difficulty</label>
+        <div class="difficulty-buttons">
+          <button class="difficulty-btn" data-difficulty="easy" onclick="selectDifficulty('easy')">Easy</button>
+          <button class="difficulty-btn active" data-difficulty="medium" onclick="selectDifficulty('medium')">Medium</button>
+          <button class="difficulty-btn" data-difficulty="hard" onclick="selectDifficulty('hard')">Hard</button>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="modal-btn btn-save" onclick="saveSettings()">Save</button>
+        <button class="modal-btn btn-cancel" onclick="closeOptionsModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <div class="down-arrow" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});">
     <svg viewBox="0 0 24 24">
@@ -173,9 +340,9 @@
     <p>
       • Draw three random cards each round.<br>
       • Spend coins to build structures on your side.<br>
-      • Each ball‑hit triggers your building’s effect.<br>
+      • Each ball‑hit triggers your building's effect.<br>
       • Balance offense and defense—your towers can be destroyed.<br>
-      • Win by obliterating your opponent’s Lunar Base!
+      • Win by obliterating your opponent's Lunar Base!
     </p>
   </section>
 
@@ -211,42 +378,139 @@
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas(); animateStars();
+
+    // SETTINGS MANAGEMENT
+    const defaultSettings = {
+      sfxVolume: 50,
+      sfxEnabled: true,
+      musicVolume: 30,
+      musicEnabled: true,
+      difficulty: 'medium'
+    };
+
+    let currentSettings = { ...defaultSettings };
+
+    function loadSettings() {
+      const saved = localStorage.getItem('lunarballz-settings');
+      if (saved) {
+        currentSettings = { ...defaultSettings, ...JSON.parse(saved) };
+      }
+    }
+
+    function saveSettingsToStorage() {
+      localStorage.setItem('lunarballz-settings', JSON.stringify(currentSettings));
+    }
+
+    function updateModalFromSettings() {
+      document.getElementById('sfxVolume').value = currentSettings.sfxVolume;
+      document.getElementById('sfxValue').textContent = currentSettings.sfxVolume;
+      document.getElementById('sfxEnabled').classList.toggle('checked', currentSettings.sfxEnabled);
+      
+      document.getElementById('musicVolume').value = currentSettings.musicVolume;
+      document.getElementById('musicValue').textContent = currentSettings.musicVolume;
+      document.getElementById('musicEnabled').classList.toggle('checked', currentSettings.musicEnabled);
+      
+      document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.difficulty === currentSettings.difficulty);
+      });
+    }
+
+    function openOptionsModal() {
+      updateModalFromSettings();
+      document.getElementById('optionsModal').classList.add('active');
+    }
+
+    function closeOptionsModal() {
+      document.getElementById('optionsModal').classList.remove('active');
+    }
+
+    function toggleCheckbox(id) {
+      const checkbox = document.getElementById(id);
+      checkbox.classList.toggle('checked');
+    }
+
+    function selectDifficulty(difficulty) {
+      document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+      });
+    }
+
+    function saveSettings() {
+      // Get values from modal
+      currentSettings.sfxVolume = parseInt(document.getElementById('sfxVolume').value);
+      currentSettings.sfxEnabled = document.getElementById('sfxEnabled').classList.contains('checked');
+      currentSettings.musicVolume = parseInt(document.getElementById('musicVolume').value);
+      currentSettings.musicEnabled = document.getElementById('musicEnabled').classList.contains('checked');
+      
+      const activeDifficulty = document.querySelector('.difficulty-btn.active');
+      currentSettings.difficulty = activeDifficulty ? activeDifficulty.dataset.difficulty : 'medium';
+      
+      saveSettingsToStorage();
+      closeOptionsModal();
+    }
+
+    // Volume slider updates
+    document.getElementById('sfxVolume').addEventListener('input', function() {
+      document.getElementById('sfxValue').textContent = this.value;
+    });
+
+    document.getElementById('musicVolume').addEventListener('input', function() {
+      document.getElementById('musicValue').textContent = this.value;
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('optionsModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeOptionsModal();
+      }
+    });
+
+    // Initialize settings on page load
+    loadSettings();
+
+    // Public function to get current settings (for use in game)
+    window.getLunarballzSettings = function() {
+      return { ...currentSettings };
+    };
   </script>
 
   <!-- LOAD YOUR CARDS AND RENDER -->
   <script src="cards.js"></script>
   <script>
-    const grid = document.getElementById('cardGrid');
-    LunarCards.CARD_POOL.forEach(card => {
-      const wrapper = document.createElement('div');
-      wrapper.className = `card rarity-${card.rarity}`;
+    // Only render cards if LunarCards exists
+    if (typeof LunarCards !== 'undefined' && LunarCards.CARD_POOL) {
+      const grid = document.getElementById('cardGrid');
+      LunarCards.CARD_POOL.forEach(card => {
+        const wrapper = document.createElement('div');
+        wrapper.className = `card rarity-${card.rarity}`;
 
-      const img = document.createElement('img');
-      img.src = `cards/${card.id}.png`;
-      img.alt = card.name;
-      wrapper.appendChild(img);
+        const img = document.createElement('img');
+        img.src = `cards/${card.id}.png`;
+        img.alt = card.name;
+        wrapper.appendChild(img);
 
-      const content = document.createElement('div');
-      content.className = 'card-content';
+        const content = document.createElement('div');
+        content.className = 'card-content';
 
-      const title = document.createElement('div');
-      title.className = 'card-title';
-      title.textContent = card.name;
-      content.appendChild(title);
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = card.name;
+        content.appendChild(title);
 
-      const desc = document.createElement('div');
-      desc.className = 'card-desc';
-      desc.textContent = card.description;
-      content.appendChild(desc);
+        const desc = document.createElement('div');
+        desc.className = 'card-desc';
+        desc.textContent = card.description;
+        content.appendChild(desc);
 
-      const stats = document.createElement('div');
-      stats.className = 'card-stats';
-      stats.innerHTML = `<span>Cost: ${card.cost}</span><span>HP: ${card.hp}</span>`;
-      content.appendChild(stats);
+        const stats = document.createElement('div');
+        stats.className = 'card-stats';
+        stats.innerHTML = `<span>Cost: ${card.cost}</span><span>HP: ${card.hp}</span>`;
+        content.appendChild(stats);
 
-      wrapper.appendChild(content);
-      grid.appendChild(wrapper);
-    });
+        wrapper.appendChild(content);
+        grid.appendChild(wrapper);
+      });
+    }
   </script>
 </body>
 </html>
