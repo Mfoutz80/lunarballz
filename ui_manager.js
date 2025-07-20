@@ -948,21 +948,60 @@ const UIManager = {
         }, 400);
     },
 
-    // Deck builder UI - Updated for large cards with limit checking
+    // Deck builder UI - Updated for large cards with limit checking and new player flow
     showDeckBuilder() {
         window.gameState.deckBuilding.isBuilding = true;
         window.gameState.deckBuilding.currentDeck = [];
         document.getElementById('deckBuilder').classList.remove('hidden');
+        
+        // Update instruction text for new players
+        const instructionElement = document.querySelector('.deck-builder-instruction');
+        if (instructionElement) {
+            const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() === 0;
+            if (isNewPlayer) {
+                instructionElement.textContent = 'Welcome! Build your first deck by selecting cards. You need 14 cards to play.';
+            } else {
+                instructionElement.textContent = 'Select one card (Limits: 4 copies, 1 for Legendary)';
+            }
+        }
+        
         this.showNextCardSelection();
     },
 
     showNextCardSelection() {
-        // Auto-finish when we reach exactly 14 cards
+        // Check if we have enough cards to finish (14 minimum)
         if (window.gameState.deckBuilding.currentDeck.length >= window.GameState.MIN_CARDS) {
-            this.finishDeckBuilding();
-            return;
+            // Show the finish button for experienced players, auto-finish for new players with enough cards
+            const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() <= window.GameState.MIN_CARDS;
+            
+            if (isNewPlayer) {
+                // Auto-finish for new players once they reach minimum
+                this.finishDeckBuilding();
+                return;
+            } else {
+                // Show finish button for experienced players
+                const finishBtn = document.getElementById('finishDeck');
+                if (finishBtn) {
+                    finishBtn.classList.remove('hidden');
+                }
+                
+                // Still allow them to add more cards if they want
+                if (window.gameState.deckBuilding.currentDeck.length < 20) {
+                    // Continue showing cards until they hit a reasonable max
+                    this.displayCardSelection();
+                    return;
+                } else {
+                    // Force finish if they hit max deck size
+                    this.finishDeckBuilding();
+                    return;
+                }
+            }
         }
         
+        this.displayCardSelection();
+    },
+    
+    displayCardSelection() {
         window.gameState.deckBuilding.cardSelection = window.LunarCards.getCardSelection();
         const selectionDiv = document.getElementById('cardSelection');
         selectionDiv.innerHTML = '';
@@ -982,10 +1021,36 @@ const UIManager = {
             selectionDiv.appendChild(cardElement);
         });
         
+        // Update progress display
+        this.updateDeckProgress();
+    },
+    
+    updateDeckProgress() {
         // Update progress text if it exists
         const progressElement = document.getElementById('deckProgress');
         if (progressElement) {
             progressElement.textContent = `${window.gameState.deckBuilding.currentDeck.length}/${window.GameState.MIN_CARDS}`;
+        }
+        
+        // Update instruction text to show progress
+        const instructionElement = document.querySelector('.deck-builder-instruction');
+        if (instructionElement) {
+            const remaining = window.GameState.MIN_CARDS - window.gameState.deckBuilding.currentDeck.length;
+            const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() <= window.GameState.MIN_CARDS;
+            
+            if (remaining > 0) {
+                if (isNewPlayer) {
+                    instructionElement.textContent = `Select ${remaining} more card${remaining === 1 ? '' : 's'} to complete your deck (${window.gameState.deckBuilding.currentDeck.length}/${window.GameState.MIN_CARDS})`;
+                } else {
+                    instructionElement.textContent = `Select one card (${window.gameState.deckBuilding.currentDeck.length} cards selected, ${remaining} needed minimum)`;
+                }
+            } else {
+                if (isNewPlayer) {
+                    instructionElement.textContent = 'Deck complete! Launching game...';
+                } else {
+                    instructionElement.textContent = `Deck ready! You can add more cards or deploy now (${window.gameState.deckBuilding.currentDeck.length} cards)`;
+                }
+            }
         }
     },
 
@@ -1046,6 +1111,17 @@ const UIManager = {
         document.getElementById('deckBuilder').classList.add('hidden');
         window.gameState.deckBuilding.isBuilding = false;
         
+        // Show the main game interface if it was hidden
+        const gameInterface = document.querySelector('.crt-screen');
+        if (gameInterface && gameInterface.style.display === 'none') {
+            gameInterface.style.display = 'block';
+            
+            // Initialize the game board for new players
+            if (window.GameEngine.initializeGameBoard) {
+                window.GameEngine.initializeGameBoard();
+            }
+        }
+        
         // Update UI
         this.updateHandDisplay();
         this.updateUI();
@@ -1055,6 +1131,18 @@ const UIManager = {
         if (deckOrCardsBtn) {
             deckOrCardsBtn.textContent = 'CARDS';
             deckOrCardsBtn.title = 'View and manage your card collection';
+        }
+        
+        // For new players, show a welcome message
+        const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() <= window.GameState.MIN_CARDS + 5;
+        if (isNewPlayer) {
+            // Show a brief welcome message
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.style.animation = 'blink 1s infinite';
+                startBtn.title = 'Click to start your first game!';
+            }
+            console.log('Welcome to Lunar Conquest! Your deck is ready. Click START to begin your first game!');
         }
     },
 

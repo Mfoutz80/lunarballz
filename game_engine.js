@@ -564,7 +564,16 @@ const GameEngine = {
         this.gameLoop();
     },
 
-    // Initialize game engine
+    // Check if player is a new player and needs to build first deck
+    checkNewPlayer() {
+        const hasNoDust = window.LunarDust.getDust() === 0;
+        const hasNoCards = window.CardCollection.getTotalCards() === 0;
+        const hasNoValidDeck = !window.GameState.hasValidDeck();
+        
+        return hasNoDust && hasNoCards && hasNoValidDeck;
+    },
+
+    // Initialize game engine with new player handling
     initialize() {
         // Make global constants available
         window.GRID_SIZE = window.GameState.GRID_SIZE;
@@ -573,14 +582,31 @@ const GameEngine = {
         // Initialize game state
         window.gameState = window.GameState.createInitialState();
         
-        // Create visual grid
-        this.createGrid();
-        window.GameState.initGrid();
-        window.UIManager.updateGrid();
+        // Check if this is a new player first
+        const isNewPlayer = this.checkNewPlayer();
+        
+        if (isNewPlayer) {
+            // For completely new players, delay the grid creation until after deck building
+            console.log('New player detected - will initialize game board after deck building');
+        } else {
+            // For existing players, initialize normally
+            this.createGrid();
+            window.GameState.initGrid();
+            window.UIManager.updateGrid();
+        }
+        
         window.UIManager.initializeUI();
         
         // Set up event listeners
         this.setupEventListeners();
+    },
+
+    // Initialize game board (called after deck building for new players)
+    initializeGameBoard() {
+        this.createGrid();
+        window.GameState.initGrid();
+        window.UIManager.updateGrid();
+        window.UIManager.updateUI();
     },
 
     // Set up all event listeners
@@ -630,9 +656,12 @@ const GameEngine = {
             }
         });
 
-        document.getElementById('gameBoard').addEventListener('mouseleave', () => {
-            window.UIManager.hideBuildingTooltip();
-        });
+        const gameBoard = document.getElementById('gameBoard');
+        if (gameBoard) {
+            gameBoard.addEventListener('mouseleave', () => {
+                window.UIManager.hideBuildingTooltip();
+            });
+        }
     }
 };
 
