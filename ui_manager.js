@@ -148,9 +148,9 @@ const UIManager = {
         
         gameBoard.classList.add('building-cursor');
         
-        // Try to use image cursor first
+        // Use building image for cursor
         if (customCursorImage) {
-            customCursorImage.src = `cards/${card.id}.png`;
+            customCursorImage.src = `buildings/${card.id}.png`;
             customCursorImage.style.display = 'block';
             customCursor.style.display = 'none';
             
@@ -269,6 +269,99 @@ const UIManager = {
         );
     },
 
+    // Create building image element
+    createBuildingImage(building) {
+        const img = document.createElement('img');
+        img.className = 'building-image';
+        img.style.width = '21px';
+        img.style.height = '21px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '2px';
+        img.src = `buildings/${building.cardData ? building.cardData.id : 'default'}.png`;
+        img.alt = building.cardData ? building.cardData.name : 'Building';
+        
+        // Fallback to emoji if image fails to load
+        img.onerror = () => {
+            img.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.innerHTML = building.cardData ? building.cardData.emoji : '🏢';
+            fallback.style.fontSize = '15px';
+            fallback.style.display = 'flex';
+            fallback.style.alignItems = 'center';
+            fallback.style.justifyContent = 'center';
+            fallback.style.width = '21px';
+            fallback.style.height = '21px';
+            img.parentNode.appendChild(fallback);
+        };
+        
+        return img;
+    },
+
+    // Create castle image element
+    createCastleImage() {
+        const img = document.createElement('img');
+        img.className = 'castle-image';
+        img.style.width = '24px';
+        img.style.height = '24px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '2px';
+        img.src = 'buildings/base.png';
+        img.alt = 'Base';
+        
+        // Fallback to emoji if image fails to load
+        img.onerror = () => {
+            img.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.innerHTML = '🏰';
+            fallback.style.fontSize = '15px';
+            fallback.style.display = 'flex';
+            fallback.style.alignItems = 'center';
+            fallback.style.justifyContent = 'center';
+            fallback.style.width = '24px';
+            fallback.style.height = '24px';
+            img.parentNode.appendChild(fallback);
+        };
+        
+        return img;
+    },
+
+    // Create block texture image element
+    createBlockImage(obstacle) {
+        const img = document.createElement('img');
+        img.className = 'block-image';
+        img.style.width = '30px';
+        img.style.height = '30px';
+        img.style.objectFit = 'cover';
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.zIndex = '3';
+        img.style.pointerEvents = 'none';
+        
+        // Get the appropriate texture file
+        const textureFile = window.GameState.getBlockTexture(obstacle.blockType);
+        img.src = `blocks/${textureFile}`;
+        img.alt = `Slime block ${obstacle.blockType}`;
+        
+        // Fallback to colored block if image fails to load
+        img.onerror = () => {
+            img.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.style.width = '30px';
+            fallback.style.height = '30px';
+            fallback.style.position = 'absolute';
+            fallback.style.top = '0';
+            fallback.style.left = '0';
+            fallback.style.background = 'linear-gradient(135deg, #44ff44 0%, #33cc33 30%, #22aa22 70%, #116611 100%)';
+            fallback.style.border = '1px solid #00ff00';
+            fallback.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.6), inset 0 0 4px rgba(0, 255, 0, 0.3)';
+            fallback.style.zIndex = '3';
+            img.parentNode.appendChild(fallback);
+        };
+        
+        return img;
+    },
+
     // Update grid colors, buildings, and obstacles
     updateGrid() {
         const board = document.getElementById('gameBoard');
@@ -283,41 +376,42 @@ const UIManager = {
             const owner = window.gameState.grid[y][x];
             
             if (owner === -1) {
-                // This cell has an obstacle
+                // This cell has an obstacle - use block textures
                 const obstacle = window.GameState.getObstacleAt(x, y);
-                if (obstacle) {
-                    cell.classList.add('obstacle-formation');
+                if (obstacle && obstacle.type === 'slime_blocks') {
+                    cell.classList.add('obstacle-block');
                     
-                    if (obstacle.type === 'mountain') {
-                        cell.classList.add('obstacle-mountain');
-                        if (obstacle.isPeak) {
-                            cell.classList.add('mountain-peak');
-                        }
-                    } else if (obstacle.type === 'acid') {
-                        cell.classList.add('obstacle-acid');
-                        if (obstacle.isCenter) {
-                            cell.classList.add('acid-center');
-                        }
-                    }
+                    // Add the block texture image
+                    const blockImg = this.createBlockImage(obstacle);
+                    cell.appendChild(blockImg);
+                } else {
+                    // Fallback for old obstacle types (shouldn't happen with new system)
+                    cell.classList.add('obstacle-formation');
+                    cell.style.background = 'linear-gradient(135deg, #44ff44 0%, #33cc33 30%, #22aa22 70%, #116611 100%)';
+                    cell.style.border = '1px solid #00ff00';
                 }
             } else if (owner > 0) {
                 const player = window.gameState.players[owner - 1];
                 cell.classList.add(player.color);
             } else {
-                cell.style.background = '#000';
+                // Unoccupied cells use lunar gray background
+                cell.style.background = '#2a2a2a';
             }
         });
         
-        // Add castles - adjusted positioning for larger cells
+        // Add castles with PNG images - adjusted positioning for larger cells
         window.gameState.players.forEach(player => {
             const castle = player.castle;
             const cell = board.querySelector(`[data-x="${castle.x}"][data-y="${castle.y}"]`);
             if (cell) {
                 const castleElement = document.createElement('div');
                 castleElement.className = 'castle';
-                castleElement.innerHTML = '🏰';
                 castleElement.style.top = '3px';
                 castleElement.style.left = '3px';
+                
+                // Add castle image instead of emoji
+                const castleImg = this.createCastleImage();
+                castleElement.appendChild(castleImg);
                 
                 // Add HP dots instead of bar
                 const hpDots = this.createHPDots(Math.ceil(player.hp / 10), 10);
@@ -327,17 +421,20 @@ const UIManager = {
             }
         });
         
-        // Add buildings - adjusted positioning for larger cells
+        // Add buildings with PNG images - adjusted positioning for larger cells
         window.gameState.buildings.forEach(building => {
             const cell = board.querySelector(`[data-x="${building.x}"][data-y="${building.y}"]`);
             if (cell) {
                 const buildingElement = document.createElement('div');
                 buildingElement.className = 'building';
-                buildingElement.innerHTML = building.cardData ? building.cardData.emoji : '🏢';
                 buildingElement.style.top = '4px';
                 buildingElement.style.left = '4px';
                 buildingElement.style.cursor = 'pointer';
                 buildingElement.dataset.buildingId = `${building.x}-${building.y}`;
+                
+                // Add building image instead of emoji
+                const buildingImg = this.createBuildingImage(building);
+                buildingElement.appendChild(buildingImg);
                 
                 // Add aura effects
                 const hasShield = this.hasShieldProtection(building);
@@ -604,7 +701,7 @@ const UIManager = {
         
         board.appendChild(transformation);
         
-        // Show the new card emoji in the center after a delay
+        // Show the new card image in the center after a delay
         setTimeout(() => {
             const newCardDisplay = document.createElement('div');
             newCardDisplay.style.position = 'absolute';
@@ -612,15 +709,30 @@ const UIManager = {
             newCardDisplay.style.top = `${centerY - 15}px`;
             newCardDisplay.style.width = '30px';
             newCardDisplay.style.height = '30px';
-            newCardDisplay.style.fontSize = '24px';
-            newCardDisplay.style.textAlign = 'center';
-            newCardDisplay.style.lineHeight = '30px';
             newCardDisplay.style.zIndex = '30';
             newCardDisplay.style.animation = 'card-appear 0.6s ease-out';
             newCardDisplay.style.pointerEvents = 'none';
-            newCardDisplay.style.textShadow = '0 0 10px #ffffff';
-            newCardDisplay.innerHTML = newCard.emoji;
             
+            // Try to show building image, fallback to emoji
+            const newCardImg = document.createElement('img');
+            newCardImg.style.width = '30px';
+            newCardImg.style.height = '30px';
+            newCardImg.style.objectFit = 'cover';
+            newCardImg.style.borderRadius = '4px';
+            newCardImg.src = `buildings/${newCard.id}.png`;
+            newCardImg.alt = newCard.name;
+            newCardImg.onerror = () => {
+                newCardImg.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.style.fontSize = '24px';
+                fallback.style.textAlign = 'center';
+                fallback.style.lineHeight = '30px';
+                fallback.style.textShadow = '0 0 10px #ffffff';
+                fallback.innerHTML = newCard.emoji;
+                newCardDisplay.appendChild(fallback);
+            };
+            
+            newCardDisplay.appendChild(newCardImg);
             board.appendChild(newCardDisplay);
             
             setTimeout(() => {
@@ -646,7 +758,7 @@ const UIManager = {
         const tooltipDescription = document.getElementById('tooltipDescription');
         const tooltipCost = document.getElementById('tooltipCost');
         
-        // Set tooltip content
+        // Set tooltip content (keep emoji in tooltip for readability)
         tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
         tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
         tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
@@ -682,7 +794,7 @@ const UIManager = {
         const tooltipDescription = document.getElementById('tooltipDescription');
         const tooltipCost = document.getElementById('tooltipCost');
         
-        // Set tooltip content for card
+        // Set tooltip content for card (keep emoji in tooltip for readability)
         tooltipEmoji.textContent = card.emoji;
         tooltipName.textContent = card.name;
         tooltipHealth.textContent = `${card.hp} HP`;

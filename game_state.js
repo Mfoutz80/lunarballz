@@ -6,9 +6,9 @@ const GameState = {
     DECK_SIZE: 12,
     MIN_CARDS: 14, // Minimum cards needed to play
     HAND_SIZE: 4,
-    OBSTACLE_PERCENTAGE: 0.50, // 30% of the map
-    OBSTACLE_FORMATIONS: 2, // Number of obstacle formations
-    MAX_FORMATION_SIZE: 0.25, // Maximum 10% of board size per formation
+    OBSTACLE_PERCENTAGE: 0.50, // 50% of the map
+    OBSTACLE_FORMATIONS: 1, // Number of obstacle formations
+    MAX_FORMATION_SIZE: 0.50, // Maximum 25% of board size per formation
 
 // Initialize game state
     createInitialState() {
@@ -26,7 +26,7 @@ const GameState = {
             balls: [],
             buildings: [],
             missiles: [], // New: array to store missiles
-            obstacleFormations: [], // New: array to store obstacle formations
+            obstacleFormations: [], // New: array to store obstacle formations with block types
             selectedCard: null,
             playerDeck: [],
             playerHand: [],
@@ -48,23 +48,22 @@ const GameState = {
             window.gameState.grid[y][x] = player.id;
         });
         
-        // Generate obstacle formations
-        this.generateObstacleFormations();
+        // Generate obstacle formations with block textures
+        this.generateSlimeBlockFormations();
     },
 
-    // Generate large obstacle formations
-    generateObstacleFormations() {
+    // Generate slime block formations with proper border/corner detection
+    generateSlimeBlockFormations() {
         window.gameState.obstacleFormations = [];
         const totalCells = this.GRID_SIZE * this.GRID_SIZE;
         const maxFormationCells = Math.floor(totalCells * this.MAX_FORMATION_SIZE);
         
-        const obstacleTypes = ['mountain', 'acid'];
-        
         for (let i = 0; i < this.OBSTACLE_FORMATIONS; i++) {
-            const formationType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-            const formation = this.createObstacleFormation(formationType, maxFormationCells);
+            const formation = this.createSlimeBlockFormation(maxFormationCells);
             
             if (formation.cells.length > 0) {
+                // Assign block types based on position in formation
+                this.assignSlimeBlockTypes(formation);
                 window.gameState.obstacleFormations.push(formation);
                 
                 // Mark cells in grid as obstacles
@@ -75,10 +74,10 @@ const GameState = {
         }
     },
 
-    // Create a single obstacle formation
-    createObstacleFormation(type, maxCells) {
+    // Create a slime block formation
+    createSlimeBlockFormation(maxCells) {
         const formation = {
-            type: type,
+            type: 'slime_blocks',
             cells: [],
             centerX: 0,
             centerY: 0
@@ -95,13 +94,7 @@ const GameState = {
             if (this.isValidFormationStart(startX, startY)) {
                 formation.centerX = startX;
                 formation.centerY = startY;
-                
-                if (type === 'mountain') {
-                    formation.cells = this.generateMountainWall(startX, startY, maxCells);
-                } else {
-                    formation.cells = this.generateAcidLake(startX, startY, maxCells);
-                }
-                
+                formation.cells = this.generateSlimeShape(startX, startY, maxCells);
                 break;
             }
             attempts++;
@@ -110,72 +103,120 @@ const GameState = {
         return formation;
     },
 
-    // Generate mountain wall formation
-    generateMountainWall(startX, startY, maxCells) {
+    // Generate organic slime-like shape
+    generateSlimeShape(startX, startY, maxCells) {
         const cells = [];
         const targetCells = Math.floor(maxCells * (0.6 + Math.random() * 0.4)); // 60-100% of max
         
-        // Create a wall-like formation
-        const isHorizontal = Math.random() > 0.5;
-        const length = Math.min(Math.floor(Math.sqrt(targetCells) * 2), 12);
-        const width = Math.max(1, Math.floor(targetCells / length));
+        // Start with center cell
+        const visited = new Set();
+        const queue = [{x: startX, y: startY}];
+        visited.add(`${startX},${startY}`);
         
-        for (let i = 0; i < length; i++) {
-            for (let j = 0; j < width; j++) {
-                let x, y;
+        // Grow organically outward
+        while (queue.length > 0 && cells.length < targetCells) {
+            const current = queue.shift();
+            
+            if (this.isValidObstacleCell(current.x, current.y)) {
+                cells.push({
+                    x: current.x,
+                    y: current.y,
+                    blockType: 'main' // Will be updated in assignSlimeBlockTypes
+                });
                 
-                if (isHorizontal) {
-                    x = startX + i - Math.floor(length / 2);
-                    y = startY + j - Math.floor(width / 2);
-                } else {
-                    x = startX + j - Math.floor(width / 2);
-                    y = startY + i - Math.floor(length / 2);
+                // Add neighbors with some randomness for organic growth
+                const directions = [
+                    {dx: 0, dy: -1}, // up
+                    {dx: 1, dy: 0},  // right
+                    {dx: 0, dy: 1},  // down
+                    {dx: -1, dy: 0}  // left
+                ];
+                
+                // Shuffle directions for more organic growth
+                for (let i = directions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [directions[i], directions[j]] = [directions[j], directions[i]];
                 }
                 
-                if (this.isValidObstacleCell(x, y)) {
-                    cells.push({
-                        x: x,
-                        y: y,
-                        isPeak: i === Math.floor(length / 2) && j === Math.floor(width / 2)
-                    });
-                }
+                directions.forEach(dir => {
+                    const newX = current.x + dir.dx;
+                    const newY = current.y + dir.dy;
+                    const key = `${newX},${newY}`;
+                    
+                    if (!visited.has(key) && 
+                        newX >= 0 && newX < this.GRID_SIZE && 
+                        newY >= 0 && newY < this.GRID_SIZE) {
+                        
+                        // Add some randomness - not all neighbors are added
+                        if (Math.random() < 0.7) { // 70% chance to grow in this direction
+                            queue.push({x: newX, y: newY});
+                            visited.add(key);
+                        }
+                    }
+                });
             }
         }
         
         return cells;
     },
 
-    // Generate acid lake formation
-    generateAcidLake(startX, startY, maxCells) {
-        const cells = [];
-        const targetCells = Math.floor(maxCells * (0.7 + Math.random() * 0.3)); // 70-100% of max
+    // Assign block types (borders, corners, main) based on neighboring cells
+    assignSlimeBlockTypes(formation) {
+        formation.cells.forEach(cell => {
+            const neighbors = this.getSlimeNeighbors(formation, cell.x, cell.y);
+            cell.blockType = this.determineSlimeBlockType(neighbors);
+        });
+    },
+
+    // Get neighboring slime cells
+    getSlimeNeighbors(formation, x, y) {
+        const neighbors = {
+            top: false,
+            right: false,
+            bottom: false,
+            left: false
+        };
         
-        // Create a more circular/organic formation
-        const radius = Math.floor(Math.sqrt(targetCells / Math.PI)) + 1;
+        const directions = [
+            {key: 'top', dx: 0, dy: -1},
+            {key: 'right', dx: 1, dy: 0},
+            {key: 'bottom', dx: 0, dy: 1},
+            {key: 'left', dx: -1, dy: 0}
+        ];
         
-        for (let dy = -radius; dy <= radius; dy++) {
-            for (let dx = -radius; dx <= radius; dx++) {
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // Create organic shape with some randomness
-                const threshold = radius * (0.7 + Math.random() * 0.3);
-                
-                if (distance <= threshold) {
-                    const x = startX + dx;
-                    const y = startY + dy;
-                    
-                    if (this.isValidObstacleCell(x, y)) {
-                        cells.push({
-                            x: x,
-                            y: y,
-                            isCenter: dx === 0 && dy === 0
-                        });
-                    }
-                }
-            }
-        }
+        directions.forEach(dir => {
+            const checkX = x + dir.dx;
+            const checkY = y + dir.dy;
+            
+            // Check if there's a slime block in this direction
+            const hasNeighbor = formation.cells.some(cell => 
+                cell.x === checkX && cell.y === checkY
+            );
+            
+            neighbors[dir.key] = hasNeighbor;
+        });
         
-        return cells;
+        return neighbors;
+    },
+
+    // Determine which block texture to use based on neighbors
+    determineSlimeBlockType(neighbors) {
+        const {top, right, bottom, left} = neighbors;
+        
+        // Corner pieces (where exactly 2 adjacent sides are missing)
+        if (!top && !left && right && bottom) return 'corner_left_top';
+        if (!top && !right && left && bottom) return 'corner_right_top';
+        if (!bottom && !left && top && right) return 'corner_left_bottom';
+        if (!bottom && !right && top && left) return 'corner_right_bottom';
+        
+        // Border pieces (where exactly 1 side is missing)
+        if (!top && left && right && bottom) return 'border_top';
+        if (!right && top && bottom && left) return 'border_right';
+        if (!bottom && top && left && right) return 'border_bottom';
+        if (!left && top && right && bottom) return 'border_left';
+        
+        // Main piece (surrounded by other blocks or interior)
+        return 'main';
     },
 
     // Check if position is valid for formation start
@@ -224,13 +265,14 @@ const GameState = {
         return true;
     },
 
-    // Get obstacle formation at position
+    // Get obstacle block at position with texture info
     getObstacleAt(x, y) {
         for (let formation of window.gameState.obstacleFormations) {
             const cell = formation.cells.find(cell => cell.x === x && cell.y === y);
             if (cell) {
                 return {
                     type: formation.type,
+                    blockType: cell.blockType,
                     ...cell
                 };
             }
@@ -241,6 +283,23 @@ const GameState = {
     // Check if position has obstacle
     hasObstacle(x, y) {
         return window.gameState.grid[y] && window.gameState.grid[y][x] === -1;
+    },
+
+    // Get block texture filename
+    getBlockTexture(blockType) {
+        const textureMap = {
+            'main': 'slime_main.png',
+            'border_top': 'slime_border_top.png',
+            'border_right': 'slime_border_right.png',
+            'border_bottom': 'slime_border_bottom.png',
+            'border_left': 'slime_border_left.png',
+            'corner_left_top': 'slime_corner_left_top.png',
+            'corner_right_top': 'slime_corner_right_top.png',
+            'corner_left_bottom': 'slime_corner_left_bottom.png',
+            'corner_right_bottom': 'slime_corner_right_bottom.png'
+        };
+        
+        return textureMap[blockType] || 'slime_main.png';
     },
 
     // Initialize balls
