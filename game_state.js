@@ -6,9 +6,9 @@ const GameState = {
     DECK_SIZE: 12,
     MIN_CARDS: 14, // Minimum cards needed to play
     HAND_SIZE: 4,
-    OBSTACLE_PERCENTAGE: 0.50, // 50% of the map
+    OBSTACLE_PERCENTAGE: 0.30, // 50% of the map
     OBSTACLE_FORMATIONS: 1, // Number of obstacle formations
-    MAX_FORMATION_SIZE: 0.50, // Maximum 25% of board size per formation
+    MAX_FORMATION_SIZE: 0.30, // Maximum 25% of board size per formation
 
 // Initialize game state
     createInitialState() {
