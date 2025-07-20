@@ -539,6 +539,13 @@
             cursor: not-allowed;
         }
         
+        .craft-btn-max {
+            background: #6b7280;
+            border-color: #6b7280;
+            color: #374151;
+            cursor: not-allowed;
+        }
+        
         .destroy-btn {
             background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             border: 1px solid #dc2626;
@@ -659,7 +666,7 @@
             overflow: visible;
         }
 
-        .deck-builder-large-card:hover {
+        .deck-builder-large-card:hover:not(.deck-card-disabled) {
             transform: translateY(-5px);
         }
 
@@ -678,6 +685,49 @@
 
         .deck-builder-large-card.selected .deck-builder-large-card-image {
             box-shadow: 0 0 20px rgba(255, 0, 128, 0.8);
+        }
+
+        /* Deck card limit styles */
+        .deck-card-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.8);
+        }
+        
+        .card-limit-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 384px; /* Only cover the image part */
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ff4444;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+            border-radius: 8px;
+            border: 2px solid #ff4444;
+        }
+        
+        .limit-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 5px #ff4444;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .limit-count {
+            font-size: 14px;
+            color: #ffcccc;
+            background: rgba(255, 68, 68, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ff4444;
         }
 
         /* Updated card stats section - now focuses on description only */
@@ -711,6 +761,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        
+        .deck-builder-card-count {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #666;
         }
 
         .deck-builder-cards-container {
@@ -891,6 +951,9 @@
                     Craft Cost: <span class="text-yellow-400">300 🌙</span> | 
                     Destroy Value: <span class="text-red-400">100 🌙</span>
                 </div>
+                <div class="retro-text text-xs text-cyan-300 mt-2">
+                    Limits: <span class="text-orange-400">4 copies max (1 for Legendary)</span>
+                </div>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6" id="cardGrid">
@@ -956,7 +1019,7 @@
             
             <!-- Instruction Text -->
             <div class="text-center mb-12">
-                <p class="deck-builder-instruction">Select one card</p>
+                <p class="deck-builder-instruction">Select one card (Limits: 4 copies, 1 for Legendary)</p>
             </div>
             
             <!-- Card Selection Area -->
@@ -1152,6 +1215,16 @@
                 cardDiv.className = 'deck-builder-large-card';
                 cardDiv.dataset.cardId = card.id;
                 
+                // Check current count in deck being built
+                const currentCount = window.gameState.deckBuilding.currentDeck.filter(c => c.id === card.id).length;
+                const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+                const isAtLimit = currentCount >= maxAllowed;
+                
+                // If at limit, disable the card
+                if (isAtLimit) {
+                    cardDiv.classList.add('deck-card-disabled');
+                }
+                
                 // Card image
                 const img = document.createElement('img');
                 img.className = 'deck-builder-large-card-image';
@@ -1167,6 +1240,17 @@
                     cardDiv.appendChild(fallback);
                 };
                 
+                // Add limit overlay if at limit
+                if (isAtLimit) {
+                    const limitOverlay = document.createElement('div');
+                    limitOverlay.className = 'card-limit-overlay';
+                    limitOverlay.innerHTML = `
+                        <div class="limit-text">LIMIT REACHED</div>
+                        <div class="limit-count">${currentCount}/${maxAllowed}</div>
+                    `;
+                    cardDiv.appendChild(limitOverlay);
+                }
+                
                 // Card info section - only name and description
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'deck-builder-card-stats';
@@ -1175,12 +1259,23 @@
                 nameDiv.className = 'deck-builder-card-name';
                 nameDiv.textContent = card.name;
                 
+                // Add limit indicator to name if at limit
+                if (isAtLimit) {
+                    nameDiv.style.color = '#888888';
+                }
+                
                 const descriptionDiv = document.createElement('div');
                 descriptionDiv.className = 'deck-builder-card-description';
                 descriptionDiv.textContent = card.description;
                 
+                // Add count indicator
+                const countDiv = document.createElement('div');
+                countDiv.className = 'deck-builder-card-count';
+                countDiv.innerHTML = `<span class="${isAtLimit ? 'text-red-400' : 'text-green-400'}">${currentCount}/${maxAllowed}</span>`;
+                
                 infoDiv.appendChild(nameDiv);
                 infoDiv.appendChild(descriptionDiv);
+                infoDiv.appendChild(countDiv);
                 
                 cardDiv.appendChild(img);
                 cardDiv.appendChild(infoDiv);
@@ -1261,7 +1356,9 @@
                 
                 window.LunarCards.CARD_POOL.forEach(card => {
                     const cardCount = window.CardCollection.getCardCount(card.id);
-                    const canCraft = currentDust >= window.CardCollection.CRAFT_COST;
+                    const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+                    const isAtMaxLimit = cardCount >= maxAllowed;
+                    const canCraft = currentDust >= window.CardCollection.CRAFT_COST && !isAtMaxLimit;
                     const canDestroy = cardCount > 0 && totalCards > window.CardCollection.MIN_CARDS;
                     
                     const cardDiv = document.createElement('div');
@@ -1281,6 +1378,9 @@
                         cardDiv.appendChild(fallback);
                     };
                     
+                    const craftButtonText = isAtMaxLimit ? 'MAX REACHED' : `CRAFT (300🌙)`;
+                    const craftButtonClass = isAtMaxLimit ? 'craft-btn-max' : 'craft-btn';
+                    
                     cardDiv.innerHTML = `
                         <div class="card-count">${cardCount}</div>
                         <div class="retro-text text-xs mb-2">${card.name}</div>
@@ -1289,10 +1389,11 @@
                             <div class="text-yellow-400">💰 ${card.cost}</div>
                             <div class="text-green-400">❤️ ${card.hp}</div>
                             <div class="text-purple-400">${card.rarity}</div>
+                            <div class="text-orange-400">${cardCount}/${maxAllowed}</div>
                         </div>
                         <div class="card-actions">
-                            <button class="craft-btn" data-card-id="${card.id}" ${!canCraft ? 'disabled' : ''}>
-                                CRAFT (300🌙)
+                            <button class="${craftButtonClass}" data-card-id="${card.id}" ${!canCraft ? 'disabled' : ''}>
+                                ${craftButtonText}
                             </button>
                             <button class="destroy-btn" data-card-id="${card.id}" ${!canDestroy ? 'disabled' : ''}>
                                 DESTROY (100🌙)
@@ -1486,7 +1587,7 @@
             // Initialize dust display
             window.LunarDust.updateDisplay();
 
-            // Initialize Card Collection system
+            // Initialize Card Collection system with limits
             window.CardCollection = {
                 CRAFT_COST: 300,
                 DESTROY_VALUE: 100,
@@ -1509,11 +1610,30 @@
                     return collection[cardId] || 0;
                 },
                 
+                // Get max allowed for a card
+                getMaxAllowed(cardId) {
+                    const card = window.LunarCards.CARD_POOL.find(c => c.id === cardId);
+                    return card && card.rarity === 'legendary' ? 1 : 4;
+                },
+                
+                // Check if card is at limit
+                isAtLimit(cardId) {
+                    return this.getCardCount(cardId) >= this.getMaxAllowed(cardId);
+                },
+                
                 // Add card to collection
                 addCard(cardId, count = 1) {
                     const collection = this.getCollection();
-                    collection[cardId] = (collection[cardId] || 0) + count;
-                    this.saveCollection(collection);
+                    const maxAllowed = this.getMaxAllowed(cardId);
+                    const currentCount = collection[cardId] || 0;
+                    const addAmount = Math.min(count, maxAllowed - currentCount);
+                    
+                    if (addAmount > 0) {
+                        collection[cardId] = currentCount + addAmount;
+                        this.saveCollection(collection);
+                        return true;
+                    }
+                    return false;
                 },
                 
                 // Remove card from collection
@@ -1547,9 +1667,13 @@
                             const deck = JSON.parse(savedDeck);
                             const collection = {};
                             
-                            // Convert old deck to collection
+                            // Convert old deck to collection with limits
                             deck.forEach(card => {
-                                collection[card.id] = (collection[card.id] || 0) + 1;
+                                const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+                                const currentCount = collection[card.id] || 0;
+                                if (currentCount < maxAllowed) {
+                                    collection[card.id] = currentCount + 1;
+                                }
                             });
                             
                             this.saveCollection(collection);
@@ -1565,10 +1689,12 @@
                     return false;
                 },
                 
-                // Craft a card
+                // Craft a card with limit checking
                 craftCard(cardId) {
                     const currentDust = window.LunarDust.getDust();
-                    if (currentDust >= this.CRAFT_COST) {
+                    const isAtLimit = this.isAtLimit(cardId);
+                    
+                    if (currentDust >= this.CRAFT_COST && !isAtLimit) {
                         // Deduct dust
                         localStorage.setItem('lunarConquestDust', (currentDust - this.CRAFT_COST).toString());
                         

@@ -69,11 +69,21 @@ const UIManager = {
         return cardDiv;
     },
 
-    // Create large deck builder card element
+    // Create large deck builder card element with limit indicator
     createDeckBuilderCardElement(card) {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'deck-builder-large-card';
         cardDiv.dataset.cardId = card.id;
+        
+        // Check current count in deck being built
+        const currentCount = window.gameState.deckBuilding.currentDeck.filter(c => c.id === card.id).length;
+        const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+        const isAtLimit = currentCount >= maxAllowed;
+        
+        // If at limit, disable the card
+        if (isAtLimit) {
+            cardDiv.classList.add('deck-card-disabled');
+        }
         
         // Card image
         const img = document.createElement('img');
@@ -93,6 +103,17 @@ const UIManager = {
             cardDiv.appendChild(fallback);
         };
         
+        // Add limit overlay if at limit
+        if (isAtLimit) {
+            const limitOverlay = document.createElement('div');
+            limitOverlay.className = 'card-limit-overlay';
+            limitOverlay.innerHTML = `
+                <div class="limit-text">LIMIT REACHED</div>
+                <div class="limit-count">${currentCount}/${maxAllowed}</div>
+            `;
+            cardDiv.appendChild(limitOverlay);
+        }
+        
         // Card info section - just name and description
         const infoDiv = document.createElement('div');
         infoDiv.className = 'deck-builder-card-stats';
@@ -101,12 +122,23 @@ const UIManager = {
         nameDiv.className = 'deck-builder-card-name';
         nameDiv.textContent = card.name;
         
+        // Add limit indicator to name if at limit
+        if (isAtLimit) {
+            nameDiv.style.color = '#888888';
+        }
+        
         const descriptionDiv = document.createElement('div');
         descriptionDiv.className = 'deck-builder-card-description';
         descriptionDiv.textContent = card.description;
         
+        // Add count indicator
+        const countDiv = document.createElement('div');
+        countDiv.className = 'deck-builder-card-count';
+        countDiv.innerHTML = `<span class="${isAtLimit ? 'text-red-400' : 'text-green-400'}">${currentCount}/${maxAllowed}</span>`;
+        
         infoDiv.appendChild(nameDiv);
         infoDiv.appendChild(descriptionDiv);
+        infoDiv.appendChild(countDiv);
         
         cardDiv.appendChild(img);
         cardDiv.appendChild(infoDiv);
@@ -916,7 +948,7 @@ const UIManager = {
         }, 400);
     },
 
-    // Deck builder UI - Updated for large cards
+    // Deck builder UI - Updated for large cards with limit checking
     showDeckBuilder() {
         window.gameState.deckBuilding.isBuilding = true;
         window.gameState.deckBuilding.currentDeck = [];
@@ -937,7 +969,16 @@ const UIManager = {
         
         window.gameState.deckBuilding.cardSelection.forEach((card, index) => {
             const cardElement = this.createDeckBuilderCardElement(card);
-            cardElement.addEventListener('click', () => this.selectDeckCard(card, index));
+            
+            // Check if card can be selected (not at limit)
+            const currentCount = window.gameState.deckBuilding.currentDeck.filter(c => c.id === card.id).length;
+            const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+            const isAtLimit = currentCount >= maxAllowed;
+            
+            if (!isAtLimit) {
+                cardElement.addEventListener('click', () => this.selectDeckCard(card, index));
+            }
+            
             selectionDiv.appendChild(cardElement);
         });
         
@@ -949,6 +990,14 @@ const UIManager = {
     },
 
     selectDeckCard(card, index) {
+        // Check limit before adding
+        const currentCount = window.gameState.deckBuilding.currentDeck.filter(c => c.id === card.id).length;
+        const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+        
+        if (currentCount >= maxAllowed) {
+            return; // Can't add more of this card
+        }
+        
         // Remove selection from all cards
         document.querySelectorAll('.deck-builder-large-card').forEach(c => c.classList.remove('selected'));
         
@@ -1173,6 +1222,48 @@ const UIManager = {
             
             .transformation-effect {
                 filter: drop-shadow(0 0 20px #ff00ff);
+            }
+            
+            /* Deck builder card limit styles */
+            .deck-card-disabled {
+                opacity: 0.4;
+                pointer-events: none;
+                filter: grayscale(0.8);
+            }
+            
+            .card-limit-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #ff4444;
+                font-weight: bold;
+                text-align: center;
+                z-index: 10;
+                border-radius: 8px;
+            }
+            
+            .limit-text {
+                font-size: 14px;
+                margin-bottom: 4px;
+                text-shadow: 0 0 5px #ff4444;
+            }
+            
+            .limit-count {
+                font-size: 12px;
+                color: #ffcccc;
+            }
+            
+            .deck-builder-card-count {
+                margin-top: 4px;
+                font-size: 12px;
+                font-weight: bold;
             }
         `;
         document.head.appendChild(style);

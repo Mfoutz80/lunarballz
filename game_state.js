@@ -324,12 +324,68 @@ const GameState = {
         });
     },
 
-    // Generate random deck for NPCs
+    // Validate deck composition with card limits
+    validateDeck(deck) {
+        const cardCounts = {};
+        
+        // Count each card type
+        deck.forEach(card => {
+            cardCounts[card.id] = (cardCounts[card.id] || 0) + 1;
+        });
+        
+        // Check limits for each card
+        for (const [cardId, count] of Object.entries(cardCounts)) {
+            const card = window.LunarCards.CARD_POOL.find(c => c.id === cardId);
+            if (card) {
+                const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+                if (count > maxAllowed) {
+                    console.warn(`Deck validation failed: ${card.name} has ${count} copies, max allowed is ${maxAllowed}`);
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    },
+
+    // Generate random deck for NPCs with card limits
     generateRandomDeck() {
         const deck = [];
+        const cardCounts = {};
+        
         for (let i = 0; i < this.DECK_SIZE; i++) {
-            deck.push({...window.LunarCards.getRandomCard()});
+            let attempts = 0;
+            let cardSelected = false;
+            
+            while (!cardSelected && attempts < 50) {
+                const card = window.LunarCards.getRandomCard();
+                const currentCount = cardCounts[card.id] || 0;
+                const maxAllowed = card.rarity === 'legendary' ? 1 : 4;
+                
+                if (currentCount < maxAllowed) {
+                    deck.push({...card});
+                    cardCounts[card.id] = currentCount + 1;
+                    cardSelected = true;
+                }
+                attempts++;
+            }
+            
+            // If we can't find a valid card after many attempts, just add a random common card
+            if (!cardSelected) {
+                const commonCards = window.LunarCards.CARD_POOL.filter(c => c.rarity === 'common');
+                if (commonCards.length > 0) {
+                    const fallbackCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+                    const currentCount = cardCounts[fallbackCard.id] || 0;
+                    const maxAllowed = 4;
+                    
+                    if (currentCount < maxAllowed) {
+                        deck.push({...fallbackCard});
+                        cardCounts[fallbackCard.id] = currentCount + 1;
+                    }
+                }
+            }
         }
+        
         return deck;
     },
 
@@ -370,12 +426,18 @@ const GameState = {
         
         // Initialize human player (Player 1)
         if (window.gameState.deckBuilding.currentDeck.length > 0) {
-            window.gameState.players[0].deck = [...window.gameState.deckBuilding.currentDeck];
-            window.gameState.players[0].hand = [];
-            this.fillHand(window.gameState.players[0]);
-            
-            window.gameState.playerDeck = [...window.gameState.players[0].deck];
-            window.gameState.playerHand = [...window.gameState.players[0].hand];
+            // Validate the deck before using it
+            if (this.validateDeck(window.gameState.deckBuilding.currentDeck)) {
+                window.gameState.players[0].deck = [...window.gameState.deckBuilding.currentDeck];
+                window.gameState.players[0].hand = [];
+                this.fillHand(window.gameState.players[0]);
+                
+                window.gameState.playerDeck = [...window.gameState.players[0].deck];
+                window.gameState.playerHand = [...window.gameState.players[0].hand];
+            } else {
+                console.error('Invalid deck detected, regenerating...');
+                window.gameState.deckBuilding.currentDeck = [];
+            }
         }
     },
 
@@ -392,16 +454,17 @@ const GameState = {
         }
     },
 
-    // Check if player has built a complete deck
+    // Check if player has built a complete deck with proper validation
     hasValidDeck() {
         // First check if they have a collection
         if (window.CardCollection && window.CardCollection.hasEnoughCards()) {
-            return true;
+            const collectionDeck = window.CardCollection.generateDeckFromCollection();
+            return this.validateDeck(collectionDeck);
         }
         
         // Fallback to old deck system
-        return window.gameState.deckBuilding.currentDeck.length >= this.MIN_CARDS ||
-               (window.gameState.players[0].deck.length + window.gameState.players[0].hand.length) >= this.MIN_CARDS;
+        const currentDeck = window.gameState.deckBuilding.currentDeck;
+        return currentDeck.length >= this.MIN_CARDS && this.validateDeck(currentDeck);
     },
 
     // Check if player has a deck
@@ -410,6 +473,12 @@ const GameState = {
         if (window.CardCollection && window.CardCollection.hasEnoughCards()) {
             // Generate deck from collection
             const collectionDeck = window.CardCollection.generateDeckFromCollection();
+            
+            // Validate the deck
+            if (!this.validateDeck(collectionDeck)) {
+                console.warn('Collection deck validation failed');
+                return false;
+            }
             
             // Shuffle the deck
             for (let i = collectionDeck.length - 1; i > 0; i--) {
@@ -439,7 +508,7 @@ const GameState = {
             try {
                 const deck = JSON.parse(savedDeck);
                 
-                if (deck.length >= this.MIN_CARDS) {
+                if (deck.length >= this.MIN_CARDS && this.validateDeck(deck)) {
                     window.gameState.deckBuilding.currentDeck = [...deck];
                     window.gameState.players[0].deck = [...deck];
                     window.gameState.players[0].hand = [];
@@ -471,7 +540,7 @@ const GameState = {
 
     // Save deck to localStorage (now saves to collection)
     saveDeck() {
-        if (window.gameState.deckBuilding.currentDeck.length > 0) {
+        if (window.gameState.deckBuilding.currentDeck.length > 0 && this.validateDeck(window.gameState.deckBuilding.currentDeck)) {
             // Save to old system for compatibility
             localStorage.setItem('lunarConquestDeck', JSON.stringify(window.gameState.deckBuilding.currentDeck));
         }
