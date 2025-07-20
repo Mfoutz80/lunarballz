@@ -1027,7 +1027,7 @@
             
             <!-- Instruction Text -->
             <div class="text-center mb-12">
-                <p class="deck-builder-instruction">Welcome! Build your first deck by selecting cards. You need 14 cards to play.</p>
+                <p class="deck-builder-instruction">Welcome! Build your starter deck by selecting 14 cards. You can expand your collection later!</p>
             </div>
             
             <!-- Card Selection Area -->
@@ -1610,6 +1610,7 @@
                 // Save collection
                 saveCollection(collection) {
                     localStorage.setItem('lunarConquestCollection', JSON.stringify(collection));
+                    console.log('Saved collection:', collection);
                 },
                 
                 // Get card count
@@ -1689,6 +1690,7 @@
                             // Remove old deck storage
                             localStorage.removeItem('lunarConquestDeck');
                             
+                            console.log('Migrated old deck to collection:', collection);
                             return true;
                         } catch (e) {
                             console.error('Error converting old deck:', e);
@@ -1782,21 +1784,30 @@
                 }
             };
             
-            // Check if this is a completely new player
-            const isNewPlayer = window.LunarDust.getDust() === 0 && window.CardCollection.getTotalCards() === 0;
+            // Check if this is a completely new player BEFORE migration
+            const dustBeforeMigration = window.LunarDust.getDust();
+            const cardsBeforeMigration = window.CardCollection.getTotalCards();
             
-            // Try to migrate from old deck system first
+            // Try to migrate from old deck system
             const migratedFromOldDeck = window.CardCollection.initializeFromOldDeck();
             
-            // Give new players starting dust
-            if (isNewPlayer && !migratedFromOldDeck) {
+            // Check FINAL state after migration
+            const finalDust = window.LunarDust.getDust();
+            const finalCards = window.CardCollection.getTotalCards();
+            
+            // Give new players starting dust (only if they truly have nothing after migration)
+            const isCompletelyNewPlayer = (dustBeforeMigration === 0 && cardsBeforeMigration === 0 && finalDust === 0 && finalCards === 0);
+            
+            if (isCompletelyNewPlayer) {
                 // Give 300 starting dust to new players
                 window.LunarDust.addDust(300);
                 console.log('New player detected - awarded 300 starting dust!');
             }
             
-            // If player has no dust, force them into deck building immediately
-            if (window.LunarDust.getDust() === 0 || (!window.CardCollection.hasEnoughCards() && window.CardCollection.getTotalCards() === 0)) {
+            // Force deck building if player has no valid deck
+            const needsDeckBuilding = (finalDust <= 300 && finalCards === 0) || (!window.CardCollection.hasEnoughCards() && finalCards < window.GameState.MIN_CARDS);
+            
+            if (needsDeckBuilding) {
                 // Hide the main game interface
                 const gameInterface = document.querySelector('.crt-screen');
                 if (gameInterface) {

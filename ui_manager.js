@@ -959,9 +959,11 @@ const UIManager = {
         if (instructionElement) {
             const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() === 0;
             if (isNewPlayer) {
-                instructionElement.textContent = 'Welcome! Build your first deck by selecting cards. You need 14 cards to play.';
+                instructionElement.textContent = 'Welcome! Build your starter deck by selecting 14 cards. You can expand your collection later!';
+                instructionElement.classList.add('new-player');
             } else {
                 instructionElement.textContent = 'Select one card (Limits: 4 copies, 1 for Legendary)';
+                instructionElement.classList.remove('new-player');
             }
         }
         
@@ -971,23 +973,22 @@ const UIManager = {
     showNextCardSelection() {
         // Check if we have enough cards to finish (14 minimum)
         if (window.gameState.deckBuilding.currentDeck.length >= window.GameState.MIN_CARDS) {
-            // Show the finish button for experienced players, auto-finish for new players with enough cards
+            // Check if this is a new player (limited to exactly 14 cards)
             const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() <= window.GameState.MIN_CARDS;
             
             if (isNewPlayer) {
-                // Auto-finish for new players once they reach minimum
+                // New players auto-finish at exactly 14 cards - no more allowed
                 this.finishDeckBuilding();
                 return;
             } else {
-                // Show finish button for experienced players
+                // Experienced players can continue adding cards
                 const finishBtn = document.getElementById('finishDeck');
                 if (finishBtn) {
                     finishBtn.classList.remove('hidden');
                 }
                 
-                // Still allow them to add more cards if they want
+                // Allow them to add more cards up to a reasonable max
                 if (window.gameState.deckBuilding.currentDeck.length < 20) {
-                    // Continue showing cards until they hit a reasonable max
                     this.displayCardSelection();
                     return;
                 } else {
@@ -1040,15 +1041,19 @@ const UIManager = {
             
             if (remaining > 0) {
                 if (isNewPlayer) {
-                    instructionElement.textContent = `Select ${remaining} more card${remaining === 1 ? '' : 's'} to complete your deck (${window.gameState.deckBuilding.currentDeck.length}/${window.GameState.MIN_CARDS})`;
+                    instructionElement.textContent = `Select ${remaining} more card${remaining === 1 ? '' : 's'} to complete your starter deck (${window.gameState.deckBuilding.currentDeck.length}/${window.GameState.MIN_CARDS})`;
+                    instructionElement.classList.add('new-player');
                 } else {
                     instructionElement.textContent = `Select one card (${window.gameState.deckBuilding.currentDeck.length} cards selected, ${remaining} needed minimum)`;
+                    instructionElement.classList.remove('new-player');
                 }
             } else {
                 if (isNewPlayer) {
-                    instructionElement.textContent = 'Deck complete! Launching game...';
+                    instructionElement.textContent = 'Starter deck complete! Deploying to game...';
+                    instructionElement.classList.add('new-player');
                 } else {
                     instructionElement.textContent = `Deck ready! You can add more cards or deploy now (${window.gameState.deckBuilding.currentDeck.length} cards)`;
+                    instructionElement.classList.remove('new-player');
                 }
             }
         }
@@ -1088,9 +1093,12 @@ const UIManager = {
             collection[card.id] = (collection[card.id] || 0) + 1;
         });
         
+        console.log('Finishing deck building with collection:', collection);
+        
         // Save to collection system
         if (window.CardCollection) {
             window.CardCollection.saveCollection(collection);
+            console.log('Collection saved successfully');
         }
         
         // Update game state
@@ -1133,8 +1141,14 @@ const UIManager = {
             deckOrCardsBtn.title = 'View and manage your card collection';
         }
         
+        // Verify the collection was saved properly
+        const savedCollection = window.CardCollection.getCollection();
+        const totalSavedCards = window.CardCollection.getTotalCards();
+        console.log('Verification - Saved collection:', savedCollection);
+        console.log('Verification - Total cards:', totalSavedCards);
+        
         // For new players, show a welcome message
-        const isNewPlayer = window.LunarDust.getDust() <= 300 && window.CardCollection.getTotalCards() <= window.GameState.MIN_CARDS + 5;
+        const isNewPlayer = window.LunarDust.getDust() <= 300 && totalSavedCards <= window.GameState.MIN_CARDS + 5;
         if (isNewPlayer) {
             // Show a brief welcome message
             const startBtn = document.getElementById('startBtn');
