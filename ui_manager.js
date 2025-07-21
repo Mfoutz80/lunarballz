@@ -506,13 +506,18 @@ const UIManager = {
                     buildingElement.appendChild(auraElement);
                 }
                 
-                buildingElement.addEventListener('mouseenter', (e) => {
-                    this.showBuildingTooltip(building, e);
-                });
-                
-                buildingElement.addEventListener('mouseleave', () => {
-                    this.hideBuildingTooltip();
-                });
+buildingElement.addEventListener('mouseenter', (e) => {
+    this.showBuildingTooltip(building, e);
+});
+
+buildingElement.addEventListener('mouseleave', () => {
+    this.hideBuildingTooltip();
+});
+
+// ADD THESE 4 LINES HERE:
+if (window.BuildingReturnManager) {
+    window.BuildingReturnManager.addBuildingReturnListeners(buildingElement, building);
+}
                 
                 // Add HP dots instead of bar
                 const hpDots = this.createHPDots(building.hp, building.maxHp);
@@ -811,6 +816,11 @@ const UIManager = {
         tooltip.style.left = `${left}px`;
         tooltip.style.top = `${top}px`;
         tooltip.style.display = 'block';
+        
+        // ADD BUILDING RETURN INSTRUCTION TO TOOLTIP:
+        if (window.BuildingReturnManager) {
+            window.BuildingReturnManager.enhanceTooltip(tooltip, building);
+        }
     },
     
     hideBuildingTooltip() {
@@ -1400,3 +1410,4 @@ const UIManager = {
 
 // Export for use in main game
 window.UIManager = UIManager;
+

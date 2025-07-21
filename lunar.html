@@ -9,9 +9,12 @@
     <script src="game_state.js"></script>
     <script src="card_logic.js"></script>
     <script src="ai_logic.js"></script>
+    <script src="building_return_manager.js"></script>
+
     <script src="ui_manager.js"></script>
     <script src="game_engine.js"></script>
     <script src="sound_manager.js"></script>
+
 </head>
 <body class="text-cyan-400 font-mono bg-black">
     <!-- Building Tooltip -->
@@ -569,41 +572,46 @@
                 document.getElementById('buildingTooltip').style.display = 'none';
             },
 
-            // Building tooltip functions - keep emoji in tooltip
-            showBuildingTooltip(building, event) {
-                const tooltip = document.getElementById('buildingTooltip');
-                const tooltipEmoji = document.getElementById('tooltipEmoji');
-                const tooltipName = document.getElementById('tooltipName');
-                const tooltipHealth = document.getElementById('tooltipHealth');
-                const tooltipDescription = document.getElementById('tooltipDescription');
-                const tooltipCost = document.getElementById('tooltipCost');
-                
-                // Set tooltip content (keep emoji for tooltip)
-                tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
-                tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
-                tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
-                tooltipDescription.textContent = building.cardData ? building.cardData.description : 'Basic structure';
-                tooltipCost.textContent = building.cardData ? building.cardData.cost : '0';
-                
-                // Position tooltip
-                const rect = event.target.getBoundingClientRect();
-                
-                let left = rect.left + rect.width / 2 - 50;
-                let top = rect.top - 80;
-                
-                // Adjust if tooltip goes off screen
-                if (left < 10) left = 10;
-                if (left + 100 > window.innerWidth - 10) left = window.innerWidth - 110;
-                if (top < 10) top = rect.bottom + 10;
-                
-                tooltip.style.left = `${left}px`;
-                tooltip.style.top = `${top}px`;
-                tooltip.style.display = 'block';
-            },
+// Building tooltip functions - keep emoji in tooltip
+        showBuildingTooltip(building, event) {
+            const tooltip = document.getElementById('buildingTooltip');
+            const tooltipEmoji = document.getElementById('tooltipEmoji');
+            const tooltipName = document.getElementById('tooltipName');
+            const tooltipHealth = document.getElementById('tooltipHealth');
+            const tooltipDescription = document.getElementById('tooltipDescription');
+            const tooltipCost = document.getElementById('tooltipCost');
             
-            hideBuildingTooltip() {
-                document.getElementById('buildingTooltip').style.display = 'none';
+            // Set tooltip content (keep emoji for tooltip)
+            tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
+            tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
+            tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
+            tooltipDescription.textContent = building.cardData ? building.cardData.description : 'Basic structure';
+            tooltipCost.textContent = building.cardData ? building.cardData.cost : '0';
+            
+            // Position tooltip
+            const rect = event.target.getBoundingClientRect();
+            
+            let left = rect.left + rect.width / 2 - 50;
+            let top = rect.top - 80;
+            
+            // Adjust if tooltip goes off screen
+            if (left < 10) left = 10;
+            if (left + 100 > window.innerWidth - 10) left = window.innerWidth - 110;
+            if (top < 10) top = rect.bottom + 10;
+            
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+            tooltip.style.display = 'block';
+            
+            // ADD BUILDING RETURN INSTRUCTION TO TOOLTIP:
+            if (window.BuildingReturnManager) {
+                window.BuildingReturnManager.enhanceTooltip(tooltip, building);
             }
+        },
+
+        hideBuildingTooltip() {
+            document.getElementById('buildingTooltip').style.display = 'none';
+        }
         };
 
         // Override the UIManager functions when DOM is loaded

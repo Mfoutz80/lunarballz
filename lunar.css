@@ -958,3 +958,77 @@ body {
     color: #ffff00;
     font-weight: bold;
 }
+
+
+/* Building Return Modal */
+.building-return-modal {
+    position: fixed;
+    background: rgba(0, 17, 34, 0.98);
+    border: 2px solid #00ffff;
+    border-radius: 6px;
+    color: #00ffff;
+    font-size: 12px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+    z-index: 2000;
+    padding: 12px;
+    min-width: 180px;
+    text-align: center;
+}
+
+.building-return-modal h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.building-return-modal p {
+    margin: 0 0 12px 0;
+    font-size: 11px;
+    color: #cccccc;
+    line-height: 1.3;
+}
+
+.building-return-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.building-return-btn {
+    background: linear-gradient(135deg, #003366 0%, #006699 100%);
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.building-return-btn:hover {
+    background: linear-gradient(135deg, #006699 0%, #0099cc 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+}
+
+.building-return-btn.yes {
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.building-return-btn.yes:hover {
+    background: linear-gradient(135deg, #004400 0%, #006600 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+}
+
+.building-return-btn.no {
+    border-color: #ff6666;
+    color: #ff6666;
+}
+
+.building-return-btn.no:hover {
+    background: linear-gradient(135deg, #440000 0%, #660000 100%);
+    box-shadow: 0 0 10px rgba(255, 102, 102, 0.6);
+}
