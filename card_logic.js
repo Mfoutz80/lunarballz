@@ -99,6 +99,11 @@ const CardLogic = {
                     });
                 }
                 window.gameState.players[building.owner - 1].balls += card.effectValue;
+                
+                // Play ball spawn sound (only for human player)
+                if (window.SoundManager && building.owner === 1) {
+                    window.SoundManager.playBallSpawn();
+                }
                 break;
             case 'spawn_on_death':
                 building.balls = card.effectValue;
@@ -126,6 +131,11 @@ const CardLogic = {
                     });
                 }
                 window.gameState.players[building.owner - 1].balls += 3;
+                
+                // Play ball spawn sound (only for human player)
+                if (window.SoundManager && building.owner === 1) {
+                    window.SoundManager.playBallSpawn();
+                }
                 break;
             case 'continuous_spawn':
                 building.spawnTimer = card.effectValue;
@@ -186,6 +196,11 @@ const CardLogic = {
                     });
                     window.gameState.players[building.owner - 1].balls += 1;
                     building.spawnTimer = 900;
+                    
+                    // Play ball spawn sound (only for human player)
+                    if (window.SoundManager && building.owner === 1) {
+                        window.SoundManager.playBallSpawn();
+                    }
                 }
             }
             
@@ -193,12 +208,17 @@ const CardLogic = {
             if (building.incomeTimer !== undefined) {
                 building.incomeTimer--;
                 if (building.incomeTimer <= 0) {
-                    const baseIncome = 2;
+                    const baseIncome = 20; // Change from 2 to 20
                     const productionMultiplier = this.calculateProductionMultiplier(building);
                     const boostedIncome = Math.floor(baseIncome * productionMultiplier);
                     
                     window.gameState.players[building.owner - 1].coins += boostedIncome;
-                    building.incomeTimer = 300;
+                    building.incomeTimer = 600; // Change from 300 to 600 (10 seconds at 60fps)
+                    
+                    // Play coin generate sound (only for human player)
+                    if (window.SoundManager && building.owner === 1) {
+                        window.SoundManager.playCoinGenerate();
+                    }
                 }
             }
             
@@ -292,6 +312,11 @@ const CardLogic = {
             window.gameState.missiles = [];
         }
         window.gameState.missiles.push(missile);
+        
+        // Play missile launch sound (only for human player)
+        if (window.SoundManager && building.owner === 1) {
+            window.SoundManager.playMissileLaunch();
+        }
     },
 
     // Find nearest obstacle to target
@@ -326,9 +351,19 @@ const CardLogic = {
                 const boostedCoins = Math.floor(baseCoins * productionMultiplier);
                 
                 window.gameState.players[ball.owner - 1].coins += boostedCoins;
+                
+                // Play coin generate sound (only for human player)
+                if (window.SoundManager && ball.owner === 1) {
+                    window.SoundManager.playCoinGenerate();
+                }
                 break;
             case 'speed_boost':
                 ball.speedBoost = building.cardData.effectValue;
+                
+                // Play speed boost sound (only for human player)
+                if (window.SoundManager && ball.owner === 1) {
+                    window.SoundManager.playSpeedBoost();
+                }
                 break;
             case 'slow_enemies':
                 window.gameState.balls.forEach(enemyBall => {
@@ -368,6 +403,11 @@ const CardLogic = {
                     }
                 });
                 
+                // Play snare activate sound (only for human player)
+                if (window.SoundManager && ball.owner === 1) {
+                    window.SoundManager.playSnareActivate();
+                }
+                
                 // Create fortress activation effect with diminishing returns indicator
                 window.UIManager.createFortressActivationEffect(building, effectivenessFactor, ownerPlayer.snareUseCount);
                 
@@ -386,6 +426,11 @@ const CardLogic = {
                 
                 ball.x = safePos.x;
                 ball.y = safePos.y;
+                
+                // Play teleport sound (only for human player)
+                if (window.SoundManager && ball.owner === 1) {
+                    window.SoundManager.playTeleport();
+                }
                 break;
             case 'redirect_balls':
                 let nearestEnemy = null;
@@ -451,6 +496,11 @@ const CardLogic = {
                         window.gameState.players[ball.owner - 1].coins += drainAmount;
                     }
                 });
+                
+                // Play coin generate sound for draining (only for human player)
+                if (window.SoundManager && ball.owner === 1) {
+                    window.SoundManager.playCoinGenerate();
+                }
                 break;
             case 'warp_to_castle':
                 const enemyCastles = window.gameState.players.filter(p => p.id !== ball.owner);
@@ -462,6 +512,11 @@ const CardLogic = {
                     
                     ball.x = safePos.x;
                     ball.y = safePos.y;
+                    
+                    // Play teleport sound (only for human player)
+                    if (window.SoundManager && ball.owner === 1) {
+                        window.SoundManager.playTeleport();
+                    }
                 }
                 break;
             case 'proximity_income':
@@ -477,6 +532,11 @@ const CardLogic = {
                             const boostedIncome = Math.floor(baseIncome * productionMultiplier);
                             
                             window.gameState.players[ball.owner - 1].coins += boostedIncome;
+                            
+                            // Play coin generate sound (only for human player)
+                            if (window.SoundManager && ball.owner === 1) {
+                                window.SoundManager.playCoinGenerate();
+                            }
                         }
                     }
                 });
@@ -525,6 +585,11 @@ const CardLogic = {
                     });
                 }
                 
+                // Play chain lightning sound (only for human player)
+                if (window.SoundManager && targetSquares.length > 0 && ball.owner === 1) {
+                    window.SoundManager.playChainLightning();
+                }
+                
                 // Show visual effect
                 if (targetSquares.length > 0) {
                     window.UIManager.createChainLightning(building, targetSquares);
@@ -551,7 +616,9 @@ const CardLogic = {
                 description: 'Grants 2 balls when built. Lose balls if destroyed.',
                 effect: 'spawn_balls',
                 effectValue: 2,
-                rarity: 'common'
+                rarity: 'common',
+                on_build_sound: 'default',
+                sound_effect: 'none'
             };
         }
         
@@ -589,6 +656,11 @@ const CardLogic = {
             // Add the transformed building
             window.gameState.buildings.push(transformedBuilding);
             
+            // Play transformation sound (only for human player)
+            if (window.SoundManager && building.owner === 1) {
+                window.SoundManager.playTransformation();
+            }
+            
             // Create visual transformation effect
             window.UIManager.createTransformationEffect(building.x, building.y, newCard);
             
@@ -620,6 +692,11 @@ const CardLogic = {
                 });
             }
             window.gameState.players[building.owner - 1].balls += spawnCount;
+            
+            // Play ball spawn sound for death spawning (only for human player)
+            if (window.SoundManager && building.owner === 1) {
+                window.SoundManager.playBallSpawn();
+            }
         }
         
         // Remove balls stored in building

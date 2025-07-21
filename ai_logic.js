@@ -63,6 +63,9 @@ const AILogic = {
             cardData: card
         };
         
+        // Don't play building placement sounds for AI players
+        // Sounds are only for human player now
+        
         window.CardLogic.applyCardEffect(newBuilding, card);
         window.gameState.buildings.push(newBuilding);
         

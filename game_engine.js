@@ -30,6 +30,11 @@ const GameEngine = {
                 cardData: window.gameState.selectedCard
             };
             
+            // Play building placement sound (human player only)
+            if (window.SoundManager) {
+                window.SoundManager.playBuildSound(window.gameState.selectedCard, 1);
+            }
+            
             window.CardLogic.applyCardEffect(newBuilding, window.gameState.selectedCard);
             
             window.gameState.buildings.push(newBuilding);
@@ -139,6 +144,11 @@ const GameEngine = {
             if (distanceToTarget < 15) { // Close enough to target
                 // Destroy the obstacle cell
                 this.destroyObstacleCell(missile.obstacleTarget);
+                
+                // Play explosion sound (global - affects all players)
+                if (window.SoundManager) {
+                    window.SoundManager.playExplosion();
+                }
                 
                 // Create explosion effect
                 window.UIManager.createExplosionEffect(missile.x, missile.y);
@@ -318,6 +328,11 @@ const GameEngine = {
                 building.hp -= damage;
                 
                 if (building.hp <= 0) {
+                    // Play building destroy sound (only for human player buildings)
+                    if (window.SoundManager && building.owner === 1) {
+                        window.SoundManager.playBuildingDestroy();
+                    }
+                    
                     window.CardLogic.destroyBuilding(building);
                     window.UIManager.updateUI();
                 }
@@ -338,6 +353,11 @@ const GameEngine = {
             building.hp -= damage;
             
             if (building.hp <= 0) {
+                // Play building destroy sound (only for human player buildings)
+                if (window.SoundManager && building.owner === 1) {
+                    window.SoundManager.playBuildingDestroy();
+                }
+                
                 window.CardLogic.destroyBuilding(building);
                 window.UIManager.updateUI();
             }
@@ -542,6 +562,11 @@ const GameEngine = {
             return;
         }
         
+        // Resume audio context and start background music for browsers that require user interaction
+        if (window.SoundManager) {
+            window.SoundManager.resumeContext();
+        }
+        
         // No need to save deck anymore - it's in collection
         window.GameState.initializePlayerDecks();
         
@@ -575,6 +600,11 @@ const GameEngine = {
 
     // Initialize game engine with new player handling
     initialize() {
+        // Initialize sound system
+        if (window.SoundManager) {
+            window.SoundManager.init();
+        }
+        
         // Make global constants available
         window.GRID_SIZE = window.GameState.GRID_SIZE;
         window.CELL_SIZE = window.GameState.CELL_SIZE;

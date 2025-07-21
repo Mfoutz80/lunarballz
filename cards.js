@@ -17,7 +17,9 @@ const CARD_POOL = [
         description: 'Grants 2 balls when built. Lose balls if destroyed.',
         effect: 'spawn_balls',
         effectValue: 2,
-        rarity: 'common'
+        rarity: 'common',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'moon_drill',
@@ -29,7 +31,9 @@ const CARD_POOL = [
         description: 'Ball hits generate 4 coins per hit',
         effect: 'generate_coins',
         effectValue: 4,
-        rarity: 'epic'
+        rarity: 'epic',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'crater_launcher',
@@ -41,7 +45,9 @@ const CARD_POOL = [
         description: 'Ball hits grant 6s speed boost',
         effect: 'speed_boost',
         effectValue: 360, // 6 seconds at 60fps
-        rarity: 'rare'
+        rarity: 'rare',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'lunar_beacon',
@@ -53,7 +59,9 @@ const CARD_POOL = [
         description: 'Ball hits pull all friendly balls toward this building',
         effect: 'attract_balls',
         effectValue: 50,
-        rarity: 'common'
+        rarity: 'common',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'moon_base',
@@ -65,7 +73,9 @@ const CARD_POOL = [
         description: 'Spawns 1 ball every 15 seconds',
         effect: 'continuous_spawn',
         effectValue: 900, // 15 seconds at 60fps
-        rarity: 'rare'
+        rarity: 'rare',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'regolith_farm',
@@ -74,10 +84,12 @@ const CARD_POOL = [
         type: 'building',
         cost: 25,
         hp: 6,
-        description: 'Generates 2 coins every 2.5 seconds',
+        description: 'Generates 20 coins every 10 seconds',
         effect: 'passive_income',
-        effectValue: 150, // 5 seconds at 60fps
-        rarity: 'common'
+        effectValue: 600, // Change from 150 to 600 (10 seconds at 60fps)
+        rarity: 'common',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'lunar_shield',
@@ -89,7 +101,9 @@ const CARD_POOL = [
         description: 'All buildings you control take 50% less damage from enemy balls',
         effect: 'global_damage_reduction',
         effectValue: 0.5,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'lunar_bastion',
@@ -101,7 +115,9 @@ const CARD_POOL = [
         description: 'Boosts all your buildings to produce 50% more credits.',
         effect: 'increase_production',
         effectValue: 0.5,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'moon_catapult',
@@ -113,7 +129,9 @@ const CARD_POOL = [
         description: 'Ball hits launch balls toward enemy territory',
         effect: 'redirect_balls',
         effectValue: 2.0,
-        rarity: 'uncommon'
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'crater_collector',
@@ -125,7 +143,9 @@ const CARD_POOL = [
         description: 'Ball hits slow down enemy balls for 3 seconds',
         effect: 'slow_enemies',
         effectValue: 180, // 3 seconds at 60fps
-        rarity: 'epic'
+        rarity: 'epic',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'lunar_fortress',
@@ -137,7 +157,9 @@ const CARD_POOL = [
         description: 'Severely snares enemy balls for 3 seconds when hit by friendly balls(diminishing returns)',
         effect: 'crippling_snare',
         effectValue: 180, // 1 seconds at 60fps
-        rarity: 'epic'
+        rarity: 'epic',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'nuclear_missiles',
@@ -149,7 +171,9 @@ const CARD_POOL = [
         description: 'Upgrade player base to shoot missiles to destroy obstacles',
         effect: 'nuclear_missiles',
         effectValue: 1,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
 
     // === ALIEN THEMED CARDS ===
@@ -163,7 +187,9 @@ const CARD_POOL = [
         description: 'Teleports friendly balls to random locations',
         effect: 'teleport_balls',
         effectValue: 1,
-        rarity: 'uncommon'
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'xenomorph_hive',
@@ -175,7 +201,9 @@ const CARD_POOL = [
         description: 'Spawns 3 balls when built, 1 ball when destroyed',
         effect: 'xenomorph_hive',
         effectValue: 3,
-        rarity: 'rare'
+        rarity: 'rare',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'plasma_generator',
@@ -187,7 +215,9 @@ const CARD_POOL = [
         description: 'Ball hits create chain lightning to nearby enemies',
         effect: 'chain_damage',
         effectValue: 2,
-        rarity: 'uncommon'
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'mind_control_tower',
@@ -199,7 +229,9 @@ const CARD_POOL = [
         description: 'Ball hits convert enemy balls to your side',
         effect: 'convert_balls',
         effectValue: 1,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'gravity_well',
@@ -211,7 +243,9 @@ const CARD_POOL = [
         description: 'Pulls all balls toward this building',
         effect: 'gravity_pull',
         effectValue: 100,
-        rarity: 'rare'
+        rarity: 'rare',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'alien_harvester',
@@ -223,7 +257,9 @@ const CARD_POOL = [
         description: 'Gains 1 coin for each enemy ball that passes nearby',
         effect: 'proximity_income',
         effectValue: 40, // Detection radius
-        rarity: 'uncommon'
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'warp_gate',
@@ -235,7 +271,9 @@ const CARD_POOL = [
         description: 'Teleports balls to enemy castle area',
         effect: 'warp_to_castle',
         effectValue: 1,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'crystal_formation',
@@ -247,7 +285,9 @@ const CARD_POOL = [
         description: 'A formidable wall shielding your city from enemies.',
         effect: 'bounce_all_balls',
         effectValue: 1,
-        rarity: 'common'
+        rarity: 'common',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'energy_siphon',
@@ -259,7 +299,9 @@ const CARD_POOL = [
         description: 'Ball hits drain 2 coins from enemy players',
         effect: 'drain_coins',
         effectValue: 2,
-        rarity: 'legendary'
+        rarity: 'legendary',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     },
     {
         id: 'metamorphic_spire',
@@ -271,7 +313,9 @@ const CARD_POOL = [
         description: 'Transforms into a random building when destroyed',
         effect: 'transform_on_death',
         effectValue: 1,
-        rarity: 'uncommon'
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
     }
 ];
 
