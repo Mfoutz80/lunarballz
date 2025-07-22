@@ -1,5 +1,6 @@
 // UI Management and Rendering
 const UIManager = {
+    
     // Create card element with retro styling and image support
     createCardElement(card, isHandCard = false) {
         const cardDiv = document.createElement('div');
@@ -1482,6 +1483,7 @@ createScrapParticle(centerX, centerY) {
         this.updateUI();
     }
 };
+
 
 // Export for use in main game
 window.UIManager = UIManager;

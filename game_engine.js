@@ -16,32 +16,41 @@ const GameEngine = {
         const isCastle = window.gameState.players.some(p => p.castle.x === x && p.castle.y === y);
         if (isCastle) return;
         
-        if (window.gameState.players[0].coins >= window.gameState.selectedCard.cost) {
-            window.gameState.players[0].coins -= window.gameState.selectedCard.cost;
-            
-            const newBuilding = {
-                type: window.gameState.selectedCard.id,
-                x: x,
-                y: y,
-                owner: 1,
-                balls: 0,
-                hp: window.gameState.selectedCard.hp,
-                maxHp: window.gameState.selectedCard.hp,
-                cardData: window.gameState.selectedCard
-            };
-            
-            // Play building placement sound (human player only)
-            if (window.SoundManager) {
-                window.SoundManager.playBuildSound(window.gameState.selectedCard, 1);
-            }
-            
-            window.CardLogic.applyCardEffect(newBuilding, window.gameState.selectedCard);
-            
-            window.gameState.buildings.push(newBuilding);
-            this.useCard(window.gameState.selectedCard);
-            window.UIManager.clearCardSelection();
-            window.UIManager.updateUI();
+        // Check if player has enough coins
+        if (window.gameState.players[0].coins < window.gameState.selectedCard.cost) return;
+        
+        // Check if card can be played (new restriction check)
+        const playabilityCheck = this.canPlayCard(window.gameState.selectedCard, 1);
+        if (!playabilityCheck.canPlay) {
+            // Show error message to player
+            this.showErrorMessage(playabilityCheck.reason);
+            return;
         }
+        
+        window.gameState.players[0].coins -= window.gameState.selectedCard.cost;
+        
+        const newBuilding = {
+            type: window.gameState.selectedCard.id,
+            x: x,
+            y: y,
+            owner: 1,
+            balls: 0,
+            hp: window.gameState.selectedCard.hp,
+            maxHp: window.gameState.selectedCard.hp,
+            cardData: window.gameState.selectedCard
+        };
+        
+        // Play building placement sound (human player only)
+        if (window.SoundManager) {
+            window.SoundManager.playBuildSound(window.gameState.selectedCard, 1);
+        }
+        
+        window.CardLogic.applyCardEffect(newBuilding, window.gameState.selectedCard);
+        
+        window.gameState.buildings.push(newBuilding);
+        this.useCard(window.gameState.selectedCard);
+        window.UIManager.clearCardSelection();
+        window.UIManager.updateUI();
     },
 
     // Use card from hand
@@ -51,6 +60,58 @@ const GameEngine = {
         window.gameState.playerHand = [...window.gameState.players[0].hand];
         window.UIManager.updateHandDisplay();
         window.UIManager.updateUI();
+    },
+
+    // Check if a card can be played based on its requirements
+    canPlayCard(card, playerId) {
+        // Check if it's Rusty Relics
+        if (card.effect === 'sacrifice_building') {
+            // Count player's current buildings
+            const playerBuildings = window.gameState.buildings.filter(b => b.owner === playerId);
+            
+            if (playerBuildings.length === 0) {
+                return {
+                    canPlay: false,
+                    reason: 'Need at least 1 building to sacrifice'
+                };
+            }
+        }
+        
+        return {
+            canPlay: true,
+            reason: ''
+        };
+    },
+
+    // Show error message to player
+    showErrorMessage(message) {
+        // Create a temporary error message element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '50%';
+        errorDiv.style.left = '50%';
+        errorDiv.style.transform = 'translate(-50%, -50%)';
+        errorDiv.style.background = 'rgba(139, 0, 0, 0.9)';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '15px 25px';
+        errorDiv.style.borderRadius = '8px';
+        errorDiv.style.border = '2px solid #ff4444';
+        errorDiv.style.fontSize = '14px';
+        errorDiv.style.fontWeight = 'bold';
+        errorDiv.style.zIndex = '1000';
+        errorDiv.style.boxShadow = '0 0 20px rgba(139, 0, 0, 0.6)';
+        errorDiv.style.animation = 'error-fade 3s ease-out forwards';
+        errorDiv.textContent = message;
+        
+        document.body.appendChild(errorDiv);
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 3000);
     },
 
     // Normalize ball speed with crippling snare effect
@@ -452,107 +513,40 @@ const GameEngine = {
         }, 1000);
     },
 
-    // End game and show results modal
+    // End game and show results modal - UPDATED FOR NEW MODAL
     endGame() {
         window.gameState.running = false;
         
         // Calculate final territories
-        const totalCells = window.GameState.GRID_SIZE * window.GameState.GRID_SIZE;
-        let territories = [0, 0, 0, 0];
+        this.calculateTerritoryControl();
         
-        window.gameState.grid.forEach(row => {
-            row.forEach(cell => {
-                if (cell > 0) {
-                    territories[cell - 1]++;
-                }
-            });
-        });
-        
-        // Update player territories
-        window.gameState.players.forEach((player, index) => {
-            player.territory = territories[index];
-        });
-        
-        // Sort players by territory (highest first)
-        const rankings = [...window.gameState.players].sort((a, b) => b.territory - a.territory);
-        
-        // Calculate dust rewards
-        const rewards = window.LunarDust.calculateRewards(rankings);
-        
-        // Award dust to players
-        let totalDustEarned = 0;
-        rewards.forEach(reward => {
-            if (reward.player.id === 1) { // Only award to human player
-                window.LunarDust.addDust(reward.dustEarned);
-                totalDustEarned = reward.dustEarned;
-            }
-        });
-        
-        // Show end game modal
-        this.showEndGameModal(rankings, rewards, totalDustEarned);
+        // Use the new EndGameManager to show the modal
+        if (window.EndGameManager) {
+            window.EndGameManager.showEndGameModal();
+        }
         
         document.getElementById('startBtn').textContent = 'START';
     },
 
-    // Show end game results modal
-    showEndGameModal(rankings, rewards, playerDustEarned) {
-        const modal = document.getElementById('endGameModal');
-        const winner = rankings[0];
-        const winnerName = winner.id === 1 ? 'YOU' : `PLAYER ${winner.id}`;
-        
-        // Set winner text
-        document.getElementById('gameWinner').textContent = `🏆 ${winnerName} WON! 🏆`;
-        document.getElementById('gameStats').textContent = `Controlled ${winner.territory} territory squares`;
-        
-        // Populate player rankings
-        const rankingsDiv = document.getElementById('playerRankings');
-        rankingsDiv.innerHTML = '';
-        
-        rankings.forEach((player, index) => {
-            const rankDiv = document.createElement('div');
-            rankDiv.className = `player-ranking rank-${index + 1}`;
-            
-            const playerName = player.id === 1 ? 'YOU' : `PLAYER ${player.id}`;
-            const medal = ['🥇', '🥈', '🥉', '4th'][index];
-            
-            rankDiv.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <span class="text-lg">${medal}</span>
-                    <span class="font-bold">${playerName}</span>
-                </div>
-                <div class="text-right">
-                    <div class="font-bold">${player.territory} territory</div>
-                    <div class="text-sm opacity-75">${player.balls} balls</div>
-                </div>
-            `;
-            
-            rankingsDiv.appendChild(rankDiv);
+    // Calculate territory control for end game
+    calculateTerritoryControl() {
+        // Reset territory counts
+        window.gameState.players.forEach(player => {
+            player.territory = 0;
         });
         
-        // Populate dust rewards
-        const dustDiv = document.getElementById('dustRewards');
-        dustDiv.innerHTML = '';
-        
-        rewards.forEach(reward => {
-            const rewardDiv = document.createElement('div');
-            rewardDiv.className = 'dust-reward';
-            
-            const playerName = reward.player.id === 1 ? 'YOU' : `PLAYER ${reward.player.id}`;
-            const dustColor = reward.player.id === 1 ? 'dust-earned' : 'text-gray-400';
-            
-            rewardDiv.innerHTML = `
-                <span>${playerName}: ${reward.rewardText}</span>
-                <span class="${dustColor}">+${reward.dustEarned} 🌙</span>
-            `;
-            
-            dustDiv.appendChild(rewardDiv);
-        });
-        
-        // Update total dust display
-        window.LunarDust.updateDisplay();
-        
-        // Show modal
-        modal.classList.remove('hidden');
+        // Count territory for each player
+        for (let y = 0; y < window.GameState.GRID_SIZE; y++) {
+            for (let x = 0; x < window.GameState.GRID_SIZE; x++) {
+                const cellOwner = window.gameState.grid[y][x];
+                if (cellOwner > 0 && cellOwner <= 4) {
+                    const player = window.gameState.players.find(p => p.id === cellOwner);
+                    if (player) {
+                        player.territory++;
+                    }
+                }
+            }
+        }
     },
 
     // Start new game
@@ -597,115 +591,7 @@ const GameEngine = {
         
         return hasNoDust && hasNoCards && hasNoValidDeck;
     },
-// ADD this function to game_engine.js:
 
-// Check if a card can be played based on its requirements
-canPlayCard(card, playerId) {
-    // Check if it's Rusty Relics
-    if (card.effect === 'sacrifice_building') {
-        // Count player's current buildings
-        const playerBuildings = window.gameState.buildings.filter(b => b.owner === playerId);
-        
-        if (playerBuildings.length === 0) {
-            return {
-                canPlay: false,
-                reason: 'Need at least 1 building to sacrifice'
-            };
-        }
-    }
-    
-    return {
-        canPlay: true,
-        reason: ''
-    };
-},
-
-// MODIFY the handleCellClick function in game_engine.js:
-// Replace the existing handleCellClick function with this:
-
-handleCellClick(x, y) {
-    if (!window.gameState.running || !window.gameState.selectedCard) return;
-    
-    const cellOwner = window.gameState.grid[y][x];
-    if (cellOwner !== 1) return;
-    
-    // Check if cell has obstacle
-    if (window.GameState.hasObstacle(x, y)) return;
-    
-    const existingBuilding = window.gameState.buildings.find(b => b.x === x && b.y === y);
-    if (existingBuilding) return;
-    
-    const isCastle = window.gameState.players.some(p => p.castle.x === x && p.castle.y === y);
-    if (isCastle) return;
-    
-    // Check if player has enough coins
-    if (window.gameState.players[0].coins < window.gameState.selectedCard.cost) return;
-    
-    // Check if card can be played (new restriction check)
-    const playabilityCheck = this.canPlayCard(window.gameState.selectedCard, 1);
-    if (!playabilityCheck.canPlay) {
-        // Show error message to player
-        this.showErrorMessage(playabilityCheck.reason);
-        return;
-    }
-    
-    window.gameState.players[0].coins -= window.gameState.selectedCard.cost;
-    
-    const newBuilding = {
-        type: window.gameState.selectedCard.id,
-        x: x,
-        y: y,
-        owner: 1,
-        balls: 0,
-        hp: window.gameState.selectedCard.hp,
-        maxHp: window.gameState.selectedCard.hp,
-        cardData: window.gameState.selectedCard
-    };
-    
-    // Play building placement sound (human player only)
-    if (window.SoundManager) {
-        window.SoundManager.playBuildSound(window.gameState.selectedCard, 1);
-    }
-    
-    window.CardLogic.applyCardEffect(newBuilding, window.gameState.selectedCard);
-    
-    window.gameState.buildings.push(newBuilding);
-    this.useCard(window.gameState.selectedCard);
-    window.UIManager.clearCardSelection();
-    window.UIManager.updateUI();
-},
-
-// ADD this function to game_engine.js for showing error messages:
-
-showErrorMessage(message) {
-    // Create a temporary error message element
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.style.position = 'fixed';
-    errorDiv.style.top = '50%';
-    errorDiv.style.left = '50%';
-    errorDiv.style.transform = 'translate(-50%, -50%)';
-    errorDiv.style.background = 'rgba(139, 0, 0, 0.9)';
-    errorDiv.style.color = '#fff';
-    errorDiv.style.padding = '15px 25px';
-    errorDiv.style.borderRadius = '8px';
-    errorDiv.style.border = '2px solid #ff4444';
-    errorDiv.style.fontSize = '14px';
-    errorDiv.style.fontWeight = 'bold';
-    errorDiv.style.zIndex = '1000';
-    errorDiv.style.boxShadow = '0 0 20px rgba(139, 0, 0, 0.6)';
-    errorDiv.style.animation = 'error-fade 3s ease-out forwards';
-    errorDiv.textContent = message;
-    
-    document.body.appendChild(errorDiv);
-    
-    // Remove after animation
-    setTimeout(() => {
-        if (errorDiv.parentNode) {
-            errorDiv.remove();
-        }
-    }, 3000);
-},
     // Initialize game engine with new player handling
     initialize() {
         // Initialize sound system
@@ -772,8 +658,14 @@ showErrorMessage(message) {
             window.UIManager.finishDeckBuilding();
         });
 
-        document.getElementById('closeEndGameModal').addEventListener('click', () => {
-            document.getElementById('endGameModal').classList.add('hidden');
+        // UPDATED: Remove old end game modal listener and add new one
+        document.getElementById('continueButton').addEventListener('click', () => {
+            // Stop end game music
+            if (window.SoundManager) {
+                window.SoundManager.stopEndGameMusic();
+            }
+            // Refresh the page
+            location.reload();
         });
 
         document.getElementById('closeCardCollection').addEventListener('click', () => {

@@ -569,6 +569,41 @@ const GameState = {
             player.balls = 3;
             player.hp = 100;
         });
+    },
+
+    // End the game and show results
+    endGame() {
+        // Stop the game
+        window.gameState.running = false;
+        
+        // Calculate territory for each player
+        this.calculateTerritoryControl();
+        
+        // Show end game modal with new design
+        if (window.EndGameManager) {
+            window.EndGameManager.showEndGameModal();
+        }
+    },
+
+    // Calculate territory control for end game
+    calculateTerritoryControl() {
+        // Reset territory counts
+        window.gameState.players.forEach(player => {
+            player.territory = 0;
+        });
+        
+        // Count territory for each player
+        for (let y = 0; y < this.GRID_SIZE; y++) {
+            for (let x = 0; x < this.GRID_SIZE; x++) {
+                const cellOwner = window.gameState.grid[y][x];
+                if (cellOwner > 0 && cellOwner <= 4) {
+                    const player = window.gameState.players.find(p => p.id === cellOwner);
+                    if (player) {
+                        player.territory++;
+                    }
+                }
+            }
+        }
     }
 };
 

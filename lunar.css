@@ -1081,3 +1081,227 @@ body {
     background: linear-gradient(135deg, #440000 0%, #660000 100%);
     box-shadow: 0 0 10px rgba(255, 102, 102, 0.6);
 }
+/* COMPLETE END GAME MODAL CSS - REPLACE ALL YOUR END GAME MODAL STYLES WITH THIS */
+
+/* End game modal with funky space border */
+.end-game-modal {
+    background: url('images/ending_bg.png') center/cover no-repeat;
+    position: relative;
+    color: white;
+    text-align: center;
+    padding: 40px;
+    border-radius: 20px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    
+    /* FUNKY SPACE YELLOW BORDER */
+    border: 5px solid #ffff00;
+    box-shadow: 
+        0 0 20px #ffff00,
+        0 0 40px #ffff00,
+        inset 0 0 20px rgba(255, 255, 0, 0.2),
+        0 0 80px rgba(255, 255, 0, 0.3);
+    animation: space-border-glow 3s ease-in-out infinite alternate;
+}
+.end-game-modal::-webkit-scrollbar {
+    display: none;
+}
+.end-game-modal::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, 
+        #ffff00, #ffd700, #ffaa00, #ffff00, 
+        #00ffff, #ffff00, #ff00ff, #ffff00);
+    background-size: 400% 400%;
+    border-radius: 25px;
+    z-index: -2;
+    animation: space-border-rainbow 4s ease infinite;
+}
+
+.end-game-modal::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    background: 
+        radial-gradient(circle at 25% 25%, #ffff00 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, #ffd700 1px, transparent 1px),
+        radial-gradient(circle at 50% 10%, #ffaa00 1px, transparent 1px),
+        radial-gradient(circle at 10% 90%, #ffff00 1px, transparent 1px),
+        radial-gradient(circle at 90% 50%, #ffd700 2px, transparent 2px);
+    background-size: 50px 50px, 30px 30px, 40px 40px, 60px 60px, 35px 35px;
+    border-radius: 22px;
+    z-index: -1;
+    animation: space-stars-twinkle 6s linear infinite;
+}
+
+.trophy-image {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px auto;
+    display: block;
+}
+
+.results-title {
+    font-size: 36px;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.rankings-container {
+    display: flex;
+    justify-content: space-around;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.ranking-box {
+    width: 160px;
+    height: 200px;
+    border: 3px solid #fff;
+    border-radius: 10px;
+    padding: 15px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ranking-place {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ranking-reward {
+    font-size: 16px;
+    color: #ffff00;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ranking-territory {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 14px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.pie-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.pie-icon::before {
+    content: '📊';
+    font-size: 16px;
+}
+
+.continue-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 3px solid #10b981;
+    color: white;
+    padding: 16px 32px;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.continue-button:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Player color backgrounds for ranking boxes */
+.ranking-box.player-1 { background: linear-gradient(135deg, #ff0080 0%, #cc0066 100%); }
+.ranking-box.player-2 { background: linear-gradient(135deg, #00ff80 0%, #00cc66 100%); }
+.ranking-box.player-3 { background: linear-gradient(135deg, #8000ff 0%, #6600cc 100%); }
+.ranking-box.player-4 { background: linear-gradient(135deg, #ff8000 0%, #cc6600 100%); }
+
+/* ANIMATIONS FOR THE FUNKY SPACE BORDER */
+@keyframes space-border-glow {
+    0% {
+        box-shadow: 
+            0 0 20px #ffff00,
+            0 0 40px #ffff00,
+            inset 0 0 20px rgba(255, 255, 0, 0.2),
+            0 0 80px rgba(255, 255, 0, 0.3);
+        border-color: #ffff00;
+    }
+    50% {
+        box-shadow: 
+            0 0 30px #ffd700,
+            0 0 60px #ffd700,
+            inset 0 0 30px rgba(255, 215, 0, 0.3),
+            0 0 120px rgba(255, 215, 0, 0.5);
+        border-color: #ffd700;
+    }
+    100% {
+        box-shadow: 
+            0 0 25px #ffaa00,
+            0 0 50px #ffaa00,
+            inset 0 0 25px rgba(255, 170, 0, 0.25),
+            0 0 100px rgba(255, 170, 0, 0.4);
+        border-color: #ffaa00;
+    }
+}
+
+@keyframes space-border-rainbow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes space-stars-twinkle {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(0.9);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}

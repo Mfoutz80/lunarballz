@@ -7,6 +7,7 @@ const SoundManager = {
     lastPlayTimes: {}, // Track when sounds were last played
     backgroundMusic: null, // Background music element
     musicVolume: 0.7, // Background music volume (separate from sound effects)
+    endGameMusic: null, // End game music element
     
     // Initialize the sound system
     init() {
@@ -22,6 +23,9 @@ const SoundManager = {
         
         // Load background music
         this.loadBackgroundMusic();
+        
+        // Load end game music
+        this.loadEndGameMusic();
         
         // Add volume control to UI if needed
         this.setupVolumeControl();
@@ -153,6 +157,27 @@ const SoundManager = {
         this.backgroundMusic.load();
     },
     
+    // Load end game music
+    loadEndGameMusic() {
+        this.endGameMusic = new Audio('sounds/music/endgame.mp3');
+        this.endGameMusic.loop = false; // Do not loop end game music
+        this.endGameMusic.volume = this.musicVolume;
+        this.endGameMusic.preload = 'auto';
+        
+        // Handle loading errors gracefully
+        this.endGameMusic.onerror = (e) => {
+            console.warn('End game music file not found or failed to load: sounds/music/endgame.mp3', e);
+            this.endGameMusic = null;
+        };
+        
+        this.endGameMusic.oncanplaythrough = () => {
+            console.log('End game music loaded successfully');
+        };
+        
+        // Try to load immediately
+        this.endGameMusic.load();
+    },
+    
     // Start background music
     startBackgroundMusic() {
         if (!this.enabled || !this.backgroundMusic) return false;
@@ -185,11 +210,49 @@ const SoundManager = {
         }
     },
     
+    // Start end game music (stops all other sounds)
+    startEndGameMusic() {
+        if (!this.enabled || !this.endGameMusic) return false;
+        
+        // Stop background music first
+        this.stopBackgroundMusic();
+        
+        try {
+            const playPromise = this.endGameMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('End game music started');
+                }).catch(e => {
+                    console.warn('End game music play failed:', e.message);
+                    if (e.name === 'NotAllowedError') {
+                        console.log('End game music blocked by browser. User interaction required.');
+                    }
+                });
+            }
+            return true;
+        } catch (e) {
+            console.warn('End game music playback error:', e);
+            return false;
+        }
+    },
+    
+    // Stop end game music
+    stopEndGameMusic() {
+        if (this.endGameMusic) {
+            this.endGameMusic.pause();
+            this.endGameMusic.currentTime = 0;
+            console.log('End game music stopped');
+        }
+    },
+    
     // Set music volume (separate from sound effects)
     setMusicVolume(volume) {
         this.musicVolume = Math.max(0, Math.min(1, volume));
         if (this.backgroundMusic) {
             this.backgroundMusic.volume = this.musicVolume;
+        }
+        if (this.endGameMusic) {
+            this.endGameMusic.volume = this.musicVolume;
         }
     },
     
@@ -265,6 +328,7 @@ const SoundManager = {
             this.startBackgroundMusic();
         } else {
             this.stopBackgroundMusic();
+            this.stopEndGameMusic();
         }
         console.log(`Sound ${this.enabled ? 'enabled' : 'disabled'}`);
         return this.enabled;

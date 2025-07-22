@@ -10,7 +10,7 @@
     <script src="card_logic.js"></script>
     <script src="ai_logic.js"></script>
     <script src="building_return_manager.js"></script>
-
+   <script src="end_game_manager.js"></script>
     <script src="ui_manager.js"></script>
     <script src="game_engine.js"></script>
     <script src="sound_manager.js"></script>
@@ -63,39 +63,19 @@
         </div>
     </div>
 
-    <!-- End Game Results Modal -->
+    <!-- NEW: End Game Results Modal -->
     <div id="endGameModal" class="deck-builder fixed inset-0 flex items-center justify-center z-50 hidden">
-        <div class="retro-panel p-6 max-w-2xl w-full mx-4">
-            <h2 class="retro-text text-center text-2xl mb-4">⚡ GAME OVER ⚡</h2>
+        <div class="end-game-modal">
+            <img src="images/trophy.png" alt="Trophy" class="trophy-image">
+            <h2 class="results-title">RESULTS</h2>
             
-            <div class="text-center mb-6">
-                <div id="gameWinner" class="text-xl retro-text mb-2"></div>
-                <div id="gameStats" class="text-sm text-cyan-300"></div>
+            <div class="rankings-container" id="playerRankings">
+                <!-- Player rankings will be populated here dynamically -->
             </div>
             
-            <div class="space-y-3 mb-6">
-                <div class="text-center retro-text text-lg mb-3">FINAL STANDINGS</div>
-                
-                <div id="playerRankings" class="space-y-2">
-                    <!-- Player rankings will be populated here -->
-                </div>
-            </div>
-            
-            <div class="border-t border-cyan-500 pt-4 mb-4">
-                <div class="text-center retro-text text-lg mb-3">🌙 LUNAR DUST REWARDS 🌙</div>
-                <div id="dustRewards" class="space-y-2">
-                    <!-- Dust rewards will be populated here -->
-                </div>
-            </div>
-            
-            <div class="text-center">
-                <div class="retro-text text-sm mb-3">
-                    Total Lunar Dust: <span id="totalDustDisplay" class="text-yellow-400">0</span>
-                </div>
-                <button id="closeEndGameModal" class="retro-button px-6 py-2 rounded">
-                    CONTINUE
-                </button>
-            </div>
+            <button id="continueButton" class="continue-button">
+                CONTINUE
+            </button>
         </div>
     </div>
 
@@ -928,6 +908,11 @@
             
             // Initialize game engine
             window.GameEngine.initialize();
+            
+            // Set up end game modal continue button
+            document.getElementById('continueButton').addEventListener('click', () => {
+                location.reload();
+            });
         });
     </script>
 </body>
