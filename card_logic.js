@@ -105,6 +105,84 @@ const CardLogic = {
                     window.SoundManager.playBallSpawn();
                 }
                 break;
+            case 'sacrifice_building':
+                // Check if player has any other buildings to sacrifice
+                const availableBuildings = window.gameState.buildings.filter(b => 
+                    b.owner === building.owner && 
+                    !(b.x === building.x && b.y === building.y)
+                );
+                
+                if (availableBuildings.length === 0) {
+                    // No buildings to sacrifice - this shouldn't happen due to placement restriction
+                    // But as safety, still grant balls and show a message
+                    console.warn('Rusty Relics played with no buildings to sacrifice');
+                }
+                
+                // Don't store balls in the building - they should be permanent
+                building.balls = 0; // This building doesn't store any balls
+                
+                // Use setTimeout to delay the sacrifice until after the building is placed
+                setTimeout(() => {
+                    // Find all player's buildings (excluding the Rusty Relics itself)
+                    const playerBuildings = window.gameState.buildings.filter(b => 
+                        b.owner === building.owner && 
+                        !(b.x === building.x && b.y === building.y)
+                    );
+                    
+                    if (playerBuildings.length > 0) {
+                        // Pick a random building to sacrifice
+                        const randomIndex = Math.floor(Math.random() * playerBuildings.length);
+                        const sacrificeBuilding = playerBuildings[randomIndex];
+                        
+                        // Create visual effect at the sacrificed building
+                        if (window.UIManager && window.UIManager.createSacrificeEffect) {
+                            window.UIManager.createSacrificeEffect(sacrificeBuilding);
+                        }
+                        
+                        // Remove the sacrificed building after a brief delay for the effect
+                        setTimeout(() => {
+                            this.destroyBuilding(sacrificeBuilding);
+                        }, 200);
+                        
+                        // Play sacrifice sound (only for human player)
+                        if (window.SoundManager && building.owner === 1) {
+                            if (window.SoundManager.playSacrificeSound) {
+                                window.SoundManager.playSacrificeSound();
+                            } else {
+                                // Fallback to existing sound
+                                window.SoundManager.playBuildingDestroy();
+                            }
+                        }
+                    }
+                }, 100);
+                
+                // Grant permanent balls immediately - these are not tied to the building
+                for (let i = 0; i < card.effectValue; i++) {
+                    const baseSpeed = 2;
+                    const targetX = building.x * window.GameState.CELL_SIZE + window.GameState.CELL_SIZE/2 + (Math.random() - 0.5) * 10;
+                    const targetY = building.y * window.GameState.CELL_SIZE + window.GameState.CELL_SIZE/2 + (Math.random() - 0.5) * 10;
+                    const safePos = this.findSafePosition(targetX, targetY, 30);
+                    
+                    window.gameState.balls.push({
+                        x: safePos.x,
+                        y: safePos.y,
+                        dx: (Math.random() - 0.5) * baseSpeed,
+                        dy: (Math.random() - 0.5) * baseSpeed,
+                        owner: building.owner,
+                        lastHit: null,
+                        baseSpeed: baseSpeed,
+                        speedBoost: 0,
+                        slowEffect: 0,
+                        cripplingSnare: 0
+                    });
+                }
+                window.gameState.players[building.owner - 1].balls += card.effectValue;
+                
+                // Play ball spawn sound (only for human player)
+                if (window.SoundManager && building.owner === 1) {
+                    window.SoundManager.playBallSpawn();
+                }
+                break;
             case 'spawn_on_death':
                 building.balls = card.effectValue;
                 break;

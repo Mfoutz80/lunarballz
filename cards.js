@@ -78,6 +78,20 @@ const CARD_POOL = [
         sound_effect: 'none'
     },
     {
+        id: 'rusty_relics',
+        name: 'RUSTY RELICS',
+        emoji: '🔩',
+        type: 'building',
+        cost: 45,
+        hp: 1,
+        description: 'Destroys 1 random friendly building and grants 3 balls when built',
+        effect: 'sacrifice_building',
+        effectValue: 3,
+        rarity: 'uncommon',
+        on_build_sound: 'default',
+        sound_effect: 'none'
+    },
+    {
         id: 'regolith_farm',
         name: 'REGOLITH FARM',
         emoji: '🌾',
@@ -152,11 +166,11 @@ const CARD_POOL = [
         name: 'LUNAR FORTRESS',
         emoji: '🏰',
         type: 'building',
-        cost: 200,
+        cost: 150,
         hp: 2,
-        description: 'Severely snares enemy balls for 3 seconds when hit by friendly balls(diminishing returns)',
+        description: 'Severely snares enemy balls for 6 seconds when hit by friendly balls(diminishing returns)',
         effect: 'crippling_snare',
-        effectValue: 180, // 1 seconds at 60fps
+        effectValue: 360, // 1 seconds at 60fps
         rarity: 'epic',
         on_build_sound: 'default',
         sound_effect: 'none'
@@ -166,7 +180,7 @@ const CARD_POOL = [
         name: 'NUCLEAR SILO',
         emoji: '☢️',
         type: 'building',
-        cost: 30,
+        cost: 10,
         hp: 6,
         description: 'Upgrade player base to shoot missiles to destroy obstacles',
         effect: 'nuclear_missiles',

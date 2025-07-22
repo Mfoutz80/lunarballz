@@ -785,6 +785,81 @@ if (window.BuildingReturnManager) {
             }
         }, 1200);
     },
+createSacrificeEffect(building) {
+    const board = document.getElementById('gameBoard');
+    const centerX = building.x * window.GameState.CELL_SIZE + window.GameState.CELL_SIZE / 2;
+    const centerY = building.y * window.GameState.CELL_SIZE + window.GameState.CELL_SIZE / 2;
+    
+    // Create dark energy swirl
+    const sacrifice = document.createElement('div');
+    sacrifice.className = 'sacrifice-effect';
+    sacrifice.style.position = 'absolute';
+    sacrifice.style.left = `${centerX - 25}px`;
+    sacrifice.style.top = `${centerY - 25}px`;
+    sacrifice.style.width = '50px';
+    sacrifice.style.height = '50px';
+    sacrifice.style.background = 'conic-gradient(from 0deg, #8B0000, #654321, #2F4F4F, #8B0000)';
+    sacrifice.style.borderRadius = '50%';
+    sacrifice.style.zIndex = '25';
+    sacrifice.style.animation = 'sacrifice-spiral 1s ease-in-out';
+    sacrifice.style.pointerEvents = 'none';
+    sacrifice.style.boxShadow = '0 0 30px #8B0000, inset 0 0 15px #2F4F4F';
+    
+    board.appendChild(sacrifice);
+    
+    // Add scrap particles
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            this.createScrapParticle(centerX, centerY);
+        }, i * 100);
+    }
+    
+    setTimeout(() => {
+        if (sacrifice.parentNode) {
+            sacrifice.remove();
+        }
+    }, 1000);
+},
+
+// Create individual scrap particles
+createScrapParticle(centerX, centerY) {
+    const board = document.getElementById('gameBoard');
+    const particle = document.createElement('div');
+    particle.style.position = 'absolute';
+    particle.style.width = '4px';
+    particle.style.height = '4px';
+    particle.style.background = '#8B4513';
+    particle.style.borderRadius = '2px';
+    particle.style.zIndex = '20';
+    particle.style.pointerEvents = 'none';
+    
+    // Random starting position around center
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * 15;
+    const startX = centerX + Math.cos(angle) * distance;
+    const startY = centerY + Math.sin(angle) * distance;
+    
+    particle.style.left = `${startX}px`;
+    particle.style.top = `${startY}px`;
+    
+    // Random velocity
+    const vx = (Math.random() - 0.5) * 60;
+    const vy = (Math.random() - 0.5) * 60 - 20; // Slight upward bias
+    
+    particle.style.animation = `scrap-fly 0.8s ease-out forwards`;
+    
+    // Set CSS custom properties for animation
+    particle.style.setProperty('--vx', `${vx}px`);
+    particle.style.setProperty('--vy', `${vy}px`);
+    
+    board.appendChild(particle);
+    
+    setTimeout(() => {
+        if (particle.parentNode) {
+            particle.remove();
+        }
+    }, 800);
+},
 
     // Building tooltip functions
     showBuildingTooltip(building, event) {

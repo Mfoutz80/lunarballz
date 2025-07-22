@@ -959,6 +959,55 @@ body {
     font-weight: bold;
 }
 
+@keyframes sacrifice-spiral {
+    0% { 
+        transform: scale(0) rotate(0deg); 
+        opacity: 0; 
+    }
+    50% { 
+        transform: scale(1.2) rotate(180deg); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: scale(0) rotate(360deg); 
+        opacity: 0; 
+    }
+}
+
+@keyframes scrap-fly {
+    0% { 
+        transform: translate(0, 0) scale(1); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: translate(var(--vx), var(--vy)) scale(0.3); 
+        opacity: 0; 
+    }
+}
+
+
+
+@keyframes error-fade {
+    0% { 
+        opacity: 0; 
+        transform: translate(-50%, -50%) scale(0.8); 
+    }
+    20% { 
+        opacity: 1; 
+        transform: translate(-50%, -50%) scale(1.05); 
+    }
+    25% { 
+        transform: translate(-50%, -50%) scale(1); 
+    }
+    80% { 
+        opacity: 1; 
+        transform: translate(-50%, -50%) scale(1); 
+    }
+    100% { 
+        opacity: 0; 
+        transform: translate(-50%, -50%) scale(0.9); 
+    }
+}
 
 /* Building Return Modal */
 .building-return-modal {

@@ -597,7 +597,115 @@ const GameEngine = {
         
         return hasNoDust && hasNoCards && hasNoValidDeck;
     },
+// ADD this function to game_engine.js:
 
+// Check if a card can be played based on its requirements
+canPlayCard(card, playerId) {
+    // Check if it's Rusty Relics
+    if (card.effect === 'sacrifice_building') {
+        // Count player's current buildings
+        const playerBuildings = window.gameState.buildings.filter(b => b.owner === playerId);
+        
+        if (playerBuildings.length === 0) {
+            return {
+                canPlay: false,
+                reason: 'Need at least 1 building to sacrifice'
+            };
+        }
+    }
+    
+    return {
+        canPlay: true,
+        reason: ''
+    };
+},
+
+// MODIFY the handleCellClick function in game_engine.js:
+// Replace the existing handleCellClick function with this:
+
+handleCellClick(x, y) {
+    if (!window.gameState.running || !window.gameState.selectedCard) return;
+    
+    const cellOwner = window.gameState.grid[y][x];
+    if (cellOwner !== 1) return;
+    
+    // Check if cell has obstacle
+    if (window.GameState.hasObstacle(x, y)) return;
+    
+    const existingBuilding = window.gameState.buildings.find(b => b.x === x && b.y === y);
+    if (existingBuilding) return;
+    
+    const isCastle = window.gameState.players.some(p => p.castle.x === x && p.castle.y === y);
+    if (isCastle) return;
+    
+    // Check if player has enough coins
+    if (window.gameState.players[0].coins < window.gameState.selectedCard.cost) return;
+    
+    // Check if card can be played (new restriction check)
+    const playabilityCheck = this.canPlayCard(window.gameState.selectedCard, 1);
+    if (!playabilityCheck.canPlay) {
+        // Show error message to player
+        this.showErrorMessage(playabilityCheck.reason);
+        return;
+    }
+    
+    window.gameState.players[0].coins -= window.gameState.selectedCard.cost;
+    
+    const newBuilding = {
+        type: window.gameState.selectedCard.id,
+        x: x,
+        y: y,
+        owner: 1,
+        balls: 0,
+        hp: window.gameState.selectedCard.hp,
+        maxHp: window.gameState.selectedCard.hp,
+        cardData: window.gameState.selectedCard
+    };
+    
+    // Play building placement sound (human player only)
+    if (window.SoundManager) {
+        window.SoundManager.playBuildSound(window.gameState.selectedCard, 1);
+    }
+    
+    window.CardLogic.applyCardEffect(newBuilding, window.gameState.selectedCard);
+    
+    window.gameState.buildings.push(newBuilding);
+    this.useCard(window.gameState.selectedCard);
+    window.UIManager.clearCardSelection();
+    window.UIManager.updateUI();
+},
+
+// ADD this function to game_engine.js for showing error messages:
+
+showErrorMessage(message) {
+    // Create a temporary error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '50%';
+    errorDiv.style.left = '50%';
+    errorDiv.style.transform = 'translate(-50%, -50%)';
+    errorDiv.style.background = 'rgba(139, 0, 0, 0.9)';
+    errorDiv.style.color = '#fff';
+    errorDiv.style.padding = '15px 25px';
+    errorDiv.style.borderRadius = '8px';
+    errorDiv.style.border = '2px solid #ff4444';
+    errorDiv.style.fontSize = '14px';
+    errorDiv.style.fontWeight = 'bold';
+    errorDiv.style.zIndex = '1000';
+    errorDiv.style.boxShadow = '0 0 20px rgba(139, 0, 0, 0.6)';
+    errorDiv.style.animation = 'error-fade 3s ease-out forwards';
+    errorDiv.textContent = message;
+    
+    document.body.appendChild(errorDiv);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 3000);
+},
     // Initialize game engine with new player handling
     initialize() {
         // Initialize sound system
