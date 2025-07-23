@@ -374,40 +374,15 @@ const GameEngine = {
     },
 
     // Handle ball collision with buildings
-    handleBallBuildingCollision(ball, building, cellKey) {
-        // Special handling for Crystal Formation - all balls bounce off
-        if (building.cardData && building.cardData.effect === 'bounce_all_balls') {
-            // Make ball bounce off by reversing its direction
-            ball.dx *= -1;
-            ball.dy *= -1;
-            
-            // Only enemy balls cause damage
-            if (building.owner !== ball.owner) {
-                let damage = 1;
-                damage *= this.calculateDamageReduction(building);
-                
-                building.hp -= damage;
-                
-                if (building.hp <= 0) {
-                    // Play building destroy sound (only for human player buildings)
-                    if (window.SoundManager && building.owner === 1) {
-                        window.SoundManager.playBuildingDestroy();
-                    }
-                    
-                    window.CardLogic.destroyBuilding(building);
-                    window.UIManager.updateUI();
-                }
-            }
-            
-            ball.lastHit = cellKey;
-            setTimeout(() => { ball.lastHit = null; }, 500);
-            return;
-        }
+handleBallBuildingCollision(ball, building, cellKey) {
+    // Special handling for Crystal Formation - all balls bounce off
+    if (building.cardData && building.cardData.effect === 'bounce_all_balls') {
+        // Make ball bounce off by reversing its direction
+        ball.dx *= -1;
+        ball.dy *= -1;
         
-        // Normal building collision logic for all other buildings
-        if (building.owner === ball.owner) {
-            window.CardLogic.activateBuildingEffect(building, ball);
-        } else {
+        // Only enemy balls cause damage
+        if (building.owner !== ball.owner) {
             let damage = 1;
             damage *= this.calculateDamageReduction(building);
             
@@ -426,7 +401,55 @@ const GameEngine = {
         
         ball.lastHit = cellKey;
         setTimeout(() => { ball.lastHit = null; }, 500);
-    },
+        return;
+    }
+    
+    // Normal building collision logic for all other buildings
+    if (building.owner === ball.owner) {
+        // Only activate effect for friendly balls if it's NOT convert_balls
+        if (building.cardData && building.cardData.effect !== 'convert_balls') {
+            window.CardLogic.activateBuildingEffect(building, ball);
+        }
+    } else {
+        // Enemy ball hitting building
+        
+        // Check if this building converts enemy balls
+        if (building.cardData && building.cardData.effect === 'convert_balls') {
+            // Convert the enemy ball that hit it
+            window.gameState.players[ball.owner - 1].balls--;
+            ball.owner = building.owner;
+            window.gameState.players[building.owner - 1].balls++;
+            
+            // Play conversion sound if available
+            if (window.SoundManager && building.owner === 1) {
+                window.SoundManager.playCoinGenerate(); // Or add a specific conversion sound
+            }
+            
+            // Create visual effect for conversion (if UIManager has this method)
+            if (window.UIManager && window.UIManager.createConversionEffect) {
+                window.UIManager.createConversionEffect(ball);
+            }
+        }
+        
+        let damage = 1;
+        damage *= this.calculateDamageReduction(building);
+        
+        building.hp -= damage;
+        
+        if (building.hp <= 0) {
+            // Play building destroy sound (only for human player buildings)
+            if (window.SoundManager && building.owner === 1) {
+                window.SoundManager.playBuildingDestroy();
+            }
+            
+            window.CardLogic.destroyBuilding(building);
+            window.UIManager.updateUI();
+        }
+    }
+    
+    ball.lastHit = cellKey;
+    setTimeout(() => { ball.lastHit = null; }, 500);
+},
 
     // Handle territory capture mechanics
     handleTerritoryCapture(ball, gridX, gridY, currentOwner, cellKey) {

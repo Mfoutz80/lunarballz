@@ -240,7 +240,7 @@ const CARD_POOL = [
         type: 'building',
         cost: 130,
         hp: 20,
-        description: 'Ball hits convert enemy balls to your side',
+        description: 'Enenmy ball hits to this building convert enemy balls to your side',
         effect: 'convert_balls',
         effectValue: 1,
         rarity: 'legendary',
