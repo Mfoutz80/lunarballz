@@ -210,7 +210,120 @@ const UIManager = {
             customCursorImage.style.display = 'none';
         }
     },
+// Setup number key listeners for card selection
+setupNumberKeyListeners() {
+    document.addEventListener('keydown', (e) => {
+        // Only work during active game
+        if (!window.gameState.running) return;
+        
+        // Check for number keys 1-4
+        if (e.key >= '1' && e.key <= '4') {
+            const slotNumber = parseInt(e.key);
+            this.selectCardBySlot(slotNumber);
+        }
+    });
+},
 
+// Select card by slot number (1-4)
+selectCardBySlot(slotNumber) {
+    const playerHand = window.gameState.players[0].hand;
+    
+    // Check if slot exists (arrays are 0-indexed)
+    const cardIndex = slotNumber - 1;
+    if (cardIndex >= 0 && cardIndex < playerHand.length) {
+        const card = playerHand[cardIndex];
+        
+        // Check if player has enough coins
+        if (window.gameState.players[0].coins < card.cost) {
+            this.showInsufficientCoinsMessage();
+            return;
+        }
+        
+        // Check if card can be played
+        const playabilityCheck = window.GameEngine.canPlayCard(card, 1);
+        if (!playabilityCheck.canPlay) {
+            window.GameEngine.showErrorMessage(playabilityCheck.reason);
+            return;
+        }
+        
+        // Select the card
+        this.selectHandCard(card);
+        
+        // Add visual feedback
+        this.flashCardSlot(slotNumber);
+        
+        console.log(`Selected card ${slotNumber}: ${card.name}`);
+    } else {
+        // No card in that slot
+        this.showNoCardMessage(slotNumber);
+    }
+},
+
+// Flash the card slot to show it was selected
+flashCardSlot(slotNumber) {
+    const handCards = document.querySelectorAll('.hand-card');
+    const cardIndex = slotNumber - 1;
+    
+    if (handCards[cardIndex]) {
+        handCards[cardIndex].classList.add('number-key-selected');
+        
+        setTimeout(() => {
+            handCards[cardIndex].classList.remove('number-key-selected');
+        }, 300);
+    }
+},
+
+// Show insufficient coins message
+showInsufficientCoinsMessage() {
+    const message = document.createElement('div');
+    message.style.position = 'fixed';
+    message.style.top = '50px';
+    message.style.left = '50%';
+    message.style.transform = 'translateX(-50%)';
+    message.style.background = 'rgba(139, 69, 19, 0.95)';
+    message.style.border = '2px solid #ff6600';
+    message.style.borderRadius = '6px';
+    message.style.color = '#ffffff';
+    message.style.padding = '8px 16px';
+    message.style.fontSize = '12px';
+    message.style.zIndex = '2001';
+    message.style.boxShadow = '0 0 15px rgba(255, 102, 0, 0.6)';
+    message.innerHTML = '💰 Not enough coins!';
+    
+    document.body.appendChild(message);
+    
+    setTimeout(() => {
+        if (message.parentNode) {
+            message.remove();
+        }
+    }, 1500);
+},
+
+// Show no card in slot message
+showNoCardMessage(slotNumber) {
+    const message = document.createElement('div');
+    message.style.position = 'fixed';
+    message.style.top = '50px';
+    message.style.left = '50%';
+    message.style.transform = 'translateX(-50%)';
+    message.style.background = 'rgba(100, 100, 100, 0.95)';
+    message.style.border = '2px solid #666666';
+    message.style.borderRadius = '6px';
+    message.style.color = '#ffffff';
+    message.style.padding = '8px 16px';
+    message.style.fontSize = '12px';
+    message.style.zIndex = '2001';
+    message.style.boxShadow = '0 0 15px rgba(102, 102, 102, 0.6)';
+    message.innerHTML = `🎴 No card in slot ${slotNumber}`;
+    
+    document.body.appendChild(message);
+    
+    setTimeout(() => {
+        if (message.parentNode) {
+            message.remove();
+        }
+    }, 1200);
+},
     // Update hand display
     updateHandDisplay() {
         const handDiv = document.getElementById('handCards');
@@ -223,8 +336,12 @@ const UIManager = {
             return;
         }
         
-        playerHand.forEach(card => {
+        playerHand.forEach((card, index) => {
             const cardElement = this.createCardElement(card, true);
+            
+            // Add slot number data attribute for CSS styling
+            cardElement.setAttribute('data-slot-number', (index + 1).toString());
+            
             handDiv.appendChild(cardElement);
         });
     },
@@ -1267,6 +1384,40 @@ createScrapParticle(centerX, centerY) {
         // Add CSS animations for lightning effects and transformation
         const style = document.createElement('style');
         style.textContent = `
+        @keyframes number-key-flash {
+    0% { background-color: rgba(0, 255, 255, 0.3); transform: scale(1); }
+    50% { background-color: rgba(0, 255, 255, 0.6); transform: scale(1.05); }
+    100% { background-color: transparent; transform: scale(1); }
+}
+
+/* Hand card slot indicators */
+.hand-card {
+    position: relative;
+}
+
+.hand-card::before {
+    content: attr(data-slot-number);
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0, 255, 255, 0.8);
+    color: #000;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 10;
+    text-shadow: none;
+    box-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
+}
+
+.hand-card.number-key-selected {
+    animation: number-key-flash 0.3s ease-out;
+}
             @keyframes lightning-pulse {
                 0% { opacity: 0; transform: scaleX(0) rotate(var(--rotation)); }
                 50% { opacity: 1; transform: scaleX(1) rotate(var(--rotation)); }
@@ -1455,6 +1606,9 @@ createScrapParticle(centerX, centerY) {
             }
         `;
         document.head.appendChild(style);
+
+// Setup number key listeners
+this.setupNumberKeyListeners();
         
         // Update button text based on card collection status
         const deckOrCardsBtn = document.getElementById('deckOrCardsBtn');
