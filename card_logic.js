@@ -556,7 +556,7 @@ const CardLogic = {
                     }
                 });
                 
-                if (nearestEnemyBall && minBallDistance < 80) {
+                if (nearestEnemyBall && minBallDistance < 200) {
                     window.gameState.players[nearestEnemyBall.owner - 1].balls--;
                     nearestEnemyBall.owner = ball.owner;
                     window.gameState.players[ball.owner - 1].balls++;
