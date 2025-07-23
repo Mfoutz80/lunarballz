@@ -1,7 +1,288 @@
 // End Game Modal Functions
 const EndGameManager = {
+    // Initialize styling for end game modal
+    initializeStyles() {
+        // Check if styles are already added to avoid duplicates
+        if (document.getElementById('endGameStyles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'endGameStyles';
+        style.textContent = `
+            /* Container for ranking boxes - single row layout */
+            #playerRankings {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 15px;
+                flex-wrap: nowrap;
+                padding: 20px;
+                max-width: 100%;
+                overflow-x: auto;
+            }
+            
+            /* Octagon corners for ranking boxes */
+            .ranking-box {
+                position: relative;
+                border-radius: 0 !important;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                border: 2px solid #00ffff;
+                clip-path: polygon(
+                    15px 0%, 
+                    calc(100% - 15px) 0%, 
+                    100% 15px, 
+                    100% calc(100% - 15px), 
+                    calc(100% - 15px) 100%, 
+                    15px 100%, 
+                    0% calc(100% - 15px), 
+                    0% 15px
+                );
+                overflow: hidden;
+                padding: 15px;
+                min-width: 140px;
+                max-width: 160px;
+                flex: 1;
+                text-align: center;
+                /* Initial state - hidden and positioned off-screen */
+                opacity: 0;
+                transform: translateY(-100px);
+                transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            
+            /* Animated state - visible and in position */
+            .ranking-box.animate-in {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            
+            /* Staggered animation delays for each player */
+            .ranking-box.player-1 {
+                transition-delay: 0.1s;
+            }
+            
+            .ranking-box.player-2 {
+                transition-delay: 0.3s;
+            }
+            
+            .ranking-box.player-3 {
+                transition-delay: 0.5s;
+            }
+            
+            .ranking-box.player-4 {
+                transition-delay: 0.7s;
+            }
+            
+            /* Animated background lines */
+            .ranking-box::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(0, 255, 255, 0.1) 10px,
+                    rgba(0, 255, 255, 0.1) 12px,
+                    transparent 12px,
+                    transparent 22px,
+                    rgba(0, 255, 255, 0.15) 22px,
+                    rgba(0, 255, 255, 0.15) 24px
+                );
+                animation: movingLines 3s linear infinite;
+                z-index: 0;
+            }
+            
+            /* Player-specific animated lines */
+            .ranking-box.player-1::after {
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255, 105, 180, 0.1) 10px,
+                    rgba(255, 105, 180, 0.1) 12px,
+                    transparent 12px,
+                    transparent 22px,
+                    rgba(255, 105, 180, 0.15) 22px,
+                    rgba(255, 105, 180, 0.15) 24px
+                );
+            }
+            
+            .ranking-box.player-2::after {
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(0, 255, 0, 0.1) 10px,
+                    rgba(0, 255, 0, 0.1) 12px,
+                    transparent 12px,
+                    transparent 22px,
+                    rgba(0, 255, 0, 0.15) 22px,
+                    rgba(0, 255, 0, 0.15) 24px
+                );
+            }
+            
+            .ranking-box.player-3::after {
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(147, 112, 219, 0.1) 10px,
+                    rgba(147, 112, 219, 0.1) 12px,
+                    transparent 12px,
+                    transparent 22px,
+                    rgba(147, 112, 219, 0.15) 22px,
+                    rgba(147, 112, 219, 0.15) 24px
+                );
+            }
+            
+            .ranking-box.player-4::after {
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255, 165, 0, 0.1) 10px,
+                    rgba(255, 165, 0, 0.1) 12px,
+                    transparent 12px,
+                    transparent 22px,
+                    rgba(255, 165, 0, 0.15) 22px,
+                    rgba(255, 165, 0, 0.15) 24px
+                );
+            }
+            
+            /* Moving lines animation */
+            @keyframes movingLines {
+                0% {
+                    left: -100%;
+                }
+                100% {
+                    left: 100%;
+                }
+            }
+            
+            /* Octagon glow effect */
+            .ranking-box::before {
+                content: '';
+                position: absolute;
+                top: -3px;
+                left: -3px;
+                right: -3px;
+                bottom: -3px;
+                background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+                clip-path: polygon(
+                    15px 0%, 
+                    calc(100% - 15px) 0%, 
+                    100% 15px, 
+                    100% calc(100% - 15px), 
+                    calc(100% - 15px) 100%, 
+                    15px 100%, 
+                    0% calc(100% - 15px), 
+                    0% 15px
+                );
+                z-index: -1;
+                opacity: 0.3;
+                animation: octagonGlow 2s ease-in-out infinite alternate;
+            }
+            
+            /* Player-specific colors for ranking boxes */
+            .ranking-box.player-1 {
+                border-color: #ff69b4;
+                border-width: 4px;
+                box-shadow: 
+                    0 0 20px rgba(255, 105, 180, 0.6),
+                    0 0 40px rgba(255, 105, 180, 0.4),
+                    inset 0 0 20px rgba(255, 105, 180, 0.1);
+                transform: scale(1.05);
+                z-index: 10;
+            }
+            
+            .ranking-box.player-1::before {
+                background: linear-gradient(45deg, #ff69b4, #ff1493, #ff69b4);
+                opacity: 0.6;
+                animation: playerHighlight 1.5s ease-in-out infinite alternate;
+            }
+            
+            .ranking-box.player-2 {
+                border-color: #00ff00;
+            }
+            
+            .ranking-box.player-2::before {
+                background: linear-gradient(45deg, #00ff00, #32cd32, #00ff00);
+            }
+            
+            .ranking-box.player-3 {
+                border-color: #9370db;
+            }
+            
+            .ranking-box.player-3::before {
+                background: linear-gradient(45deg, #9370db, #8a2be2, #9370db);
+            }
+            
+            .ranking-box.player-4 {
+                border-color: #ffa500;
+            }
+            
+            .ranking-box.player-4::before {
+                background: linear-gradient(45deg, #ffa500, #ff8c00, #ffa500);
+            }
+            
+            /* Glow animation */
+            @keyframes octagonGlow {
+                0% {
+                    opacity: 0.2;
+                    transform: scale(1);
+                }
+                100% {
+                    opacity: 0.5;
+                    transform: scale(1.02);
+                }
+            }
+            
+            /* Special pulsing animation for player 1 */
+            @keyframes playerHighlight {
+                0% {
+                    opacity: 0.4;
+                    transform: scale(1);
+                }
+                100% {
+                    opacity: 0.8;
+                    transform: scale(1.03);
+                }
+            }
+            
+            /* Enhanced text styling for octagon boxes */
+            .ranking-place {
+                font-weight: bold;
+                text-shadow: 0 0 10px currentColor;
+                font-size: 1.2em;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .ranking-reward {
+                color: #00ffff;
+                text-shadow: 0 0 8px #00ffff;
+                position: relative;
+                z-index: 1;
+            }
+            
+            .ranking-territory {
+                color: #ffff00;
+                text-shadow: 0 0 8px #ffff00;
+                position: relative;
+                z-index: 1;
+            }
+        `;
+        
+        document.head.appendChild(style);
+    },
+
     // Show end game results modal with new design
     showEndGameModal(gameResults) {
+        // Initialize styles first
+        this.initializeStyles();
+        
         // Stop all game sounds and play end game music
         if (window.SoundManager) {
             window.SoundManager.stopBackgroundMusic();
@@ -32,19 +313,19 @@ const EndGameManager = {
             let placeText, reward;
             switch (index) {
                 case 0:
-                    placeText = '1st Place';
-                    reward = `+${player.territory} 🌙`;
+                    placeText = '1st<br>Place';
+                    reward = `+${player.territory} <i class="netrva-lunite"></i>`;
                     break;
                 case 1:
-                    placeText = '2nd Place';
-                    reward = '+50 🌙';
+                    placeText = '2nd<br>Place';
+                    reward = '+50 <i class="netrva-lunite"></i>';
                     break;
                 case 2:
-                    placeText = '3rd Place';
-                    reward = '+10 🌙';
+                    placeText = '3rd<br>Place';
+                    reward = '+10 <i class="netrva-lunite"></i>';
                     break;
                 case 3:
-                    placeText = '4th Place';
+                    placeText = '4th<br>Place';
                     reward = 'No Reward';
                     break;
             }
@@ -53,7 +334,7 @@ const EndGameManager = {
                 <div class="ranking-place">${placeText}</div>
                 <div class="ranking-reward">${reward}</div>
                 <div class="ranking-territory">
-                    <span class="pie-icon"></span>
+                    <i class="netrva-pie_chart"></i>
                     ${player.territoryPercentage}%
                 </div>
             `;
@@ -89,8 +370,16 @@ const EndGameManager = {
             });
         }
         
-        // Show the modal
+        // Show the modal first (background visible)
         modal.classList.remove('hidden');
+        
+        // Wait 1 second, then animate boxes sliding in
+        setTimeout(() => {
+            const rankingBoxes = rankingsContainer.querySelectorAll('.ranking-box');
+            rankingBoxes.forEach(box => {
+                box.classList.add('animate-in');
+            });
+        }, 1000);
     },
     
     // Hide end game modal

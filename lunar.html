@@ -4,7 +4,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lunar Conquest</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="icons.css">
     <link rel="stylesheet" href="lunar.css">
+    <style>
+        /* Double the size of custom icons */
+        .netrva-ball,
+        .netrva-cards,
+        .netrva-gold,
+        .netrva-heart,
+        .netrva-lunite,
+        .netrva-tax {
+            font-size: 2em !important;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        /* Adjust spacing around icons */
+        .netrva-ball + span,
+        .netrva-cards + span,
+        .netrva-gold + span,
+        .netrva-heart + span,
+        .netrva-lunite + span,
+        .netrva-tax + span {
+            margin-left: 0.25rem;
+        }
+        
+        /* Special handling for inline icons in buttons and small text */
+        .card-actions .netrva-lunite,
+        .text-xs .netrva-gold,
+        .text-xs .netrva-heart,
+        .text-xs .netrva-lunite {
+            font-size: 1.5em !important;
+        }
+    </style>
     <script src="cards.js"></script>
     <script src="game_state.js"></script>
     <script src="card_logic.js"></script>
@@ -27,7 +59,7 @@
             <div id="tooltipDescription" class="text-xs mb-1 text-cyan-300"></div>
             <div class="flex justify-between text-xs">
                 <span>HP: <span id="tooltipHealth"></span></span>
-                <span>💰<span id="tooltipCost"></span></span>
+                <span><i class="netrva-gold"></i><span id="tooltipCost"></span></span>
             </div>
         </div>
     </div>
@@ -35,7 +67,7 @@
     <!-- Card Collection Modal -->
     <div id="cardCollectionModal" class="deck-builder fixed inset-0 flex items-center justify-center z-50 hidden">
         <div class="retro-panel p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 class="retro-text text-center text-2xl mb-4">🃏 CARD COLLECTION 🃏</h2>
+            <h2 class="retro-text text-center text-2xl mb-4"><i class="netrva-cards"></i> CARD COLLECTION <i class="netrva-cards"></i></h2>
             
             <div class="text-center mb-4">
                 <div class="retro-text text-lg mb-2">
@@ -43,8 +75,8 @@
                 </div>
                 <div class="retro-text text-sm text-cyan-300">
                     Total Cards: <span id="totalCardsCount">0</span> | 
-                    Craft Cost: <span class="text-yellow-400">300 🌙</span> | 
-                    Destroy Value: <span class="text-red-400">100 🌙</span>
+                    Craft Cost: <span class="text-yellow-400">300 <i class="netrva-lunite"></i></span> | 
+                    Destroy Value: <span class="text-red-400">100 <i class="netrva-lunite"></i></span>
                 </div>
                 <div class="retro-text text-xs text-cyan-300 mt-2">
                     Limits: <span class="text-orange-400">4 copies max (1 for Legendary)</span>
@@ -128,12 +160,12 @@
                             
                             <!-- Center section -->
                             <div class="flex items-center gap-6">
-                                <span class="retro-text" title="Lunar Dust - persistent currency">🌙<span id="lunar-dust" class="text-yellow-400">0</span></span>
-                                <span class="retro-text" title="Coins available to spend">💰<span id="p1-coins" class="text-yellow-400">10</span></span>
-                                <span class="retro-text" title="Balls currently in play">⚽<span id="p1-balls" class="text-white">3</span></span>
+                                <span class="retro-text" title="Lunar Dust - persistent currency"><i class="netrva-lunite"></i><span id="lunar-dust" class="text-yellow-400">0</span></span>
+                                <span class="retro-text" title="Coins available to spend"><i class="netrva-gold"></i><span id="p1-coins" class="text-yellow-400">10</span></span>
+                                <span class="retro-text" title="Balls currently in play"><i class="netrva-ball"></i><span id="p1-balls" class="text-white">3</span></span>
                                 <div id="timer" class="text-lg blink retro-text" title="Time remaining in game">4:00</div>
-                                <span class="retro-text" title="Cards in hand / Total deck size">🃏<span id="deck-count" class="text-green-400">0/12</span></span>
-                                <span class="retro-text" title="Current tax rate percentage">💰<span id="tax-percentage" class="text-orange-400">0%</span></span>
+                                <span class="retro-text" title="Cards in hand / Total deck size"><i class="netrva-cards"></i><span id="deck-count" class="text-green-400">0/12</span></span>
+                                <span class="retro-text" title="Current tax rate percentage"><i class="netrva-tax"></i><span id="tax-percentage" class="text-orange-400">0%</span></span>
                             </div>
                             
                             <!-- Right section - Territory meter -->
@@ -275,7 +307,7 @@
                         <div class="mb-2"></div>
                         <div class="retro-text text-xs mb-1 card-name">${card.name}</div>
                         <div class="text-xs text-cyan-300 mb-1" style="height: 30px; overflow: hidden; font-size: 8px;">${card.description}</div>
-                        <div class="text-yellow-400 font-bold text-xs card-cost">💰 ${card.cost}</div>
+                        <div class="text-yellow-400 font-bold text-xs card-cost"><i class="netrva-gold"></i> ${card.cost}</div>
                     `;
                     
                     cardDiv.insertBefore(img, cardDiv.firstChild);
@@ -453,7 +485,7 @@
                         cardDiv.appendChild(fallback);
                     };
                     
-                    const craftButtonText = isAtMaxLimit ? 'MAX REACHED' : `CRAFT (300🌙)`;
+                    const craftButtonText = isAtMaxLimit ? 'MAX REACHED' : `CRAFT (300<i class="netrva-lunite"></i>)`;
                     const craftButtonClass = isAtMaxLimit ? 'craft-btn-max' : 'craft-btn';
                     
                     cardDiv.innerHTML = `
@@ -461,8 +493,8 @@
                         <div class="retro-text text-xs mb-2">${card.name}</div>
                         <div class="text-xs text-cyan-300 mb-2" style="height: 40px; overflow: hidden;">${card.description}</div>
                         <div class="text-xs mb-2">
-                            <div class="text-yellow-400">💰 ${card.cost}</div>
-                            <div class="text-green-400">❤️ ${card.hp}</div>
+                            <div class="text-yellow-400"><i class="netrva-gold"></i> ${card.cost}</div>
+                            <div class="text-green-400"><i class="netrva-heart"></i> ${card.hp}</div>
                             <div class="text-purple-400">${card.rarity}</div>
                             <div class="text-orange-400">${cardCount}/${maxAllowed}</div>
                         </div>
@@ -471,7 +503,7 @@
                                 ${craftButtonText}
                             </button>
                             <button class="destroy-btn" data-card-id="${card.id}" ${!canDestroy ? 'disabled' : ''}>
-                                DESTROY (100🌙)
+                                DESTROY (100<i class="netrva-lunite"></i>)
                             </button>
                         </div>
                     `;
@@ -552,46 +584,46 @@
                 document.getElementById('buildingTooltip').style.display = 'none';
             },
 
-// Building tooltip functions - keep emoji in tooltip
-        showBuildingTooltip(building, event) {
-            const tooltip = document.getElementById('buildingTooltip');
-            const tooltipEmoji = document.getElementById('tooltipEmoji');
-            const tooltipName = document.getElementById('tooltipName');
-            const tooltipHealth = document.getElementById('tooltipHealth');
-            const tooltipDescription = document.getElementById('tooltipDescription');
-            const tooltipCost = document.getElementById('tooltipCost');
-            
-            // Set tooltip content (keep emoji for tooltip)
-            tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
-            tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
-            tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
-            tooltipDescription.textContent = building.cardData ? building.cardData.description : 'Basic structure';
-            tooltipCost.textContent = building.cardData ? building.cardData.cost : '0';
-            
-            // Position tooltip
-            const rect = event.target.getBoundingClientRect();
-            
-            let left = rect.left + rect.width / 2 - 50;
-            let top = rect.top - 80;
-            
-            // Adjust if tooltip goes off screen
-            if (left < 10) left = 10;
-            if (left + 100 > window.innerWidth - 10) left = window.innerWidth - 110;
-            if (top < 10) top = rect.bottom + 10;
-            
-            tooltip.style.left = `${left}px`;
-            tooltip.style.top = `${top}px`;
-            tooltip.style.display = 'block';
-            
-            // ADD BUILDING RETURN INSTRUCTION TO TOOLTIP:
-            if (window.BuildingReturnManager) {
-                window.BuildingReturnManager.enhanceTooltip(tooltip, building);
-            }
-        },
+            // Building tooltip functions - keep emoji in tooltip
+            showBuildingTooltip(building, event) {
+                const tooltip = document.getElementById('buildingTooltip');
+                const tooltipEmoji = document.getElementById('tooltipEmoji');
+                const tooltipName = document.getElementById('tooltipName');
+                const tooltipHealth = document.getElementById('tooltipHealth');
+                const tooltipDescription = document.getElementById('tooltipDescription');
+                const tooltipCost = document.getElementById('tooltipCost');
+                
+                // Set tooltip content (keep emoji for tooltip)
+                tooltipEmoji.textContent = building.cardData ? building.cardData.emoji : '🏢';
+                tooltipName.textContent = building.cardData ? building.cardData.name : 'Building';
+                tooltipHealth.textContent = `${building.hp}/${building.maxHp}`;
+                tooltipDescription.textContent = building.cardData ? building.cardData.description : 'Basic structure';
+                tooltipCost.textContent = building.cardData ? building.cardData.cost : '0';
+                
+                // Position tooltip
+                const rect = event.target.getBoundingClientRect();
+                
+                let left = rect.left + rect.width / 2 - 50;
+                let top = rect.top - 80;
+                
+                // Adjust if tooltip goes off screen
+                if (left < 10) left = 10;
+                if (left + 100 > window.innerWidth - 10) left = window.innerWidth - 110;
+                if (top < 10) top = rect.bottom + 10;
+                
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+                tooltip.style.display = 'block';
+                
+                // ADD BUILDING RETURN INSTRUCTION TO TOOLTIP:
+                if (window.BuildingReturnManager) {
+                    window.BuildingReturnManager.enhanceTooltip(tooltip, building);
+                }
+            },
 
-        hideBuildingTooltip() {
-            document.getElementById('buildingTooltip').style.display = 'none';
-        }
+            hideBuildingTooltip() {
+                document.getElementById('buildingTooltip').style.display = 'none';
+            }
         };
 
         // Override the UIManager functions when DOM is loaded
@@ -636,18 +668,6 @@
                         switch (index) {
                             case 0: // 1st place
                                 dustEarned = player.territory;
-                                rewardText = `🥇 WINNER! +${dustEarned} Dust (Territory Controlled)`;
-                                break;
-                            case 1: // 2nd place
-                                dustEarned = 50;
-                                rewardText = `🥈 2nd Place! +${dustEarned} Dust`;
-                                break;
-                            case 2: // 3rd place
-                                dustEarned = 10;
-                                rewardText = `🥉 3rd Place! +${dustEarned} Dust`;
-                                break;
-                            case 3: // 4th place
-                                dustEarned = 0;
                                 rewardText = `4th Place - No Reward`;
                                 break;
                         }
