@@ -5,6 +5,7 @@ const BuildingReturnManager = {
     hoveredBuilding: null,
     initialized: false,
     keyListener: null,
+    modalKeyListener: null, // New: separate listener for modal keys
     
     // Initialize the building return system
     init() {
@@ -59,8 +60,11 @@ const BuildingReturnManager = {
             <h4>Remove Building?</h4>
             <p id="buildingReturnDescription">Remove this building and return the card to your hand?</p>
             <div class="building-return-buttons">
-                <button class="building-return-btn yes" id="confirmRemove">Yes</button>
-                <button class="building-return-btn no" id="cancelRemove">No</button>
+                <button class="building-return-btn yes" id="confirmRemove">Yes (Y)</button>
+                <button class="building-return-btn no" id="cancelRemove">No (N)</button>
+            </div>
+            <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #888;">
+                Press Y to confirm, N to cancel, or ESC to close
             </div>
         `;
         
@@ -70,13 +74,47 @@ const BuildingReturnManager = {
         // Setup button event listeners
         document.getElementById('confirmRemove').addEventListener('click', () => this.confirmRemove());
         document.getElementById('cancelRemove').addEventListener('click', () => this.hideModal());
-        
-        // ESC key to close modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.modal && this.modal.style.display === 'block') {
-                this.hideModal();
+    },
+    
+    // Setup modal-specific keyboard listener
+    setupModalKeyListener() {
+        this.modalKeyListener = (e) => {
+            // Only handle keys when modal is visible
+            if (!this.modal || this.modal.style.display !== 'block') {
+                return;
             }
-        });
+            
+            const key = e.key.toLowerCase();
+            
+            switch (key) {
+                case 'y':
+                    e.preventDefault();
+                    this.confirmRemove();
+                    break;
+                case 'n':
+                    e.preventDefault();
+                    this.hideModal();
+                    break;
+                case 'escape':
+                    e.preventDefault();
+                    this.hideModal();
+                    break;
+                case 'enter':
+                    // Enter key confirms (same as Y)
+                    e.preventDefault();
+                    this.confirmRemove();
+                    break;
+            }
+        };
+        
+        document.addEventListener('keydown', this.modalKeyListener);
+    },
+    
+    // Remove modal keyboard listener
+    removeModalKeyListener() {
+        if (this.modalKeyListener) {
+            document.removeEventListener('keydown', this.modalKeyListener);
+        }
     },
     
     // Setup global Ctrl+R listener
@@ -109,6 +147,9 @@ const BuildingReturnManager = {
         };
         
         document.addEventListener('keydown', this.keyListener);
+        
+        // Setup modal keyboard listener
+        this.setupModalKeyListener();
     },
     
     // This function will be called FROM ui_manager.js for each building
@@ -204,8 +245,10 @@ const BuildingReturnManager = {
         this.modal.style.transform = 'translate(-50%, -50%)';
         this.modal.style.display = 'block';
         
-        // Focus on "No" button (safer default)
-        document.getElementById('cancelRemove').focus();
+        // Focus on the modal for keyboard accessibility
+        this.modal.focus();
+        
+        console.log('Modal shown - Press Y to confirm, N to cancel');
     },
     
     // Show no building selected message
@@ -267,6 +310,8 @@ const BuildingReturnManager = {
             this.modal.style.transform = '';
         }
         this.targetBuilding = null;
+        
+        console.log('Modal hidden');
     },
     
     // Confirm removal of the building
