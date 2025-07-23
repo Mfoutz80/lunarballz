@@ -1390,30 +1390,7 @@ createScrapParticle(centerX, centerY) {
     100% { background-color: transparent; transform: scale(1); }
 }
 
-/* Hand card slot indicators */
-.hand-card {
-    position: relative;
-}
 
-.hand-card::before {
-    content: attr(data-slot-number);
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    width: 16px;
-    height: 16px;
-    background: rgba(0, 255, 255, 0.8);
-    color: #000;
-    font-size: 10px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    z-index: 10;
-    text-shadow: none;
-    box-shadow: 0 0 4px rgba(0, 255, 255, 0.6);
-}
 
 .hand-card.number-key-selected {
     animation: number-key-flash 0.3s ease-out;
