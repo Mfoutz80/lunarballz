@@ -1,9 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
 body {
-    background: #000;
+    
+        padding-top: 60px; /* Adjust this value if needed based on your nav height */
+    background: linear-gradient(180deg, #001a2e 0%, #003366 50%, #001a2e 100%);
+
     font-family: 'Orbitron', monospace;
     overflow: auto;
+}
+/* Ensure nav stays above other content */
+nav.info-bar {
+    background: linear-gradient(180deg, #001a2e 0%, #003366 50%, #001a2e 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* Clean screen background */
@@ -391,6 +400,21 @@ body {
     border-top-color: #00ffff;
     z-index: 1001;
     pointer-events: none;
+}
+
+/* Navbar tooltips appear below */
+nav.info-bar [title]:hover::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 5px;
+}
+
+nav.info-bar [title]:hover::before {
+    bottom: auto;
+    top: 100%;
+    border-top-color: transparent;
+    border-bottom-color: #00ffff;
 }
 
 .cursor-icon {

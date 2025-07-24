@@ -8,17 +8,175 @@ const EndGameManager = {
         const style = document.createElement('style');
         style.id = 'endGameStyles';
         style.textContent = `
-            /* Container for ranking boxes - single row layout */
-            #playerRankings {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 15px;
-                flex-wrap: nowrap;
-                padding: 20px;
-                max-width: 100%;
-                overflow-x: auto;
-            }
+    /* FORCE CLEAN END GAME MODAL STYLES - NO INTERFERENCE WITH NAVBAR */
+    #endGameModal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        z-index: 9999 !important;
+        background: rgba(0, 0, 0, 0.95) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+.end-game-modal {
+    position: relative !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    max-width: 600px !important;
+    width: 80% !important;
+    max-height: 70vh !important;
+    overflow: hidden !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+.trophy-image {
+    width: 80px !important;
+    height: 80px !important;
+    margin: 0 auto 15px auto !important;
+    display: block !important;
+}
+
+.results-title {
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    color: white !important;
+    margin-bottom: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2px !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.continue-button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: 3px solid #10b981 !important;
+    color: white !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    transition: all 0.3s !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    margin-top: 20px !important;
+}
+    
+/* Container for ranking boxes - single row layout */
+#playerRankings {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    padding: 10px !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    position: relative !important;
+}
+    
+/* Octagon corners for ranking boxes */
+.ranking-box {
+    position: relative !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+    border: 2px solid #00ffff !important;
+    overflow: hidden !important;
+    padding: 10px !important;
+    min-width: 100px !important;
+    max-width: 120px !important;
+    flex: 1 !important;
+    text-align: center !important;
+    opacity: 0 !important;
+    transform: translateY(-50px) !important;
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    margin: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    height: 120px !important;
+}
+    
+    /* Animated state - visible and in position */
+    .ranking-box.animate-in {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+    
+    /* Staggered animation delays for each player */
+    .ranking-box.player-1 {
+        transition-delay: 0.1s !important;
+        border-color: #ff69b4 !important;
+        border-width: 4px !important;
+        box-shadow: 
+            0 0 20px rgba(255, 105, 180, 0.6),
+            0 0 40px rgba(255, 105, 180, 0.4),
+            inset 0 0 20px rgba(255, 105, 180, 0.1) !important;
+        transform: translateY(-100px) scale(1.05) !important;
+        z-index: 10 !important;
+    }
+    
+    .ranking-box.player-1.animate-in {
+        transform: translateY(0) scale(1.05) !important;
+    }
+    
+    .ranking-box.player-2 {
+        transition-delay: 0.3s !important;
+        border-color: #00ff00 !important;
+    }
+    
+    .ranking-box.player-3 {
+        transition-delay: 0.5s !important;
+        border-color: #9370db !important;
+    }
+    
+    .ranking-box.player-4 {
+        transition-delay: 0.7s !important;
+        border-color: #ffa500 !important;
+    }
+    
+    /* Enhanced text styling for octagon boxes */
+    .ranking-place {
+        font-weight: bold !important;
+        text-shadow: 0 0 10px currentColor !important;
+        font-size: 1.2em !important;
+        position: relative !important;
+        z-index: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .ranking-reward {
+        color: #00ffff !important;
+        text-shadow: 0 0 8px #00ffff !important;
+        position: relative !important;
+        z-index: 1 !important;
+        margin: 10px 0 !important;
+        padding: 0 !important;
+    }
+    
+    .ranking-territory {
+        color: #ffff00 !important;
+        text-shadow: 0 0 8px #ffff00 !important;
+        position: relative !important;
+        z-index: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
             
             /* Octagon corners for ranking boxes */
             .ranking-box {

@@ -431,9 +431,6 @@ const GameState = {
                 window.gameState.players[0].deck = [...window.gameState.deckBuilding.currentDeck];
                 window.gameState.players[0].hand = [];
                 this.fillHand(window.gameState.players[0]);
-                
-                window.gameState.playerDeck = [...window.gameState.players[0].deck];
-                window.gameState.playerHand = [...window.gameState.players[0].hand];
             } else {
                 console.error('Invalid deck detected, regenerating...');
                 window.gameState.deckBuilding.currentDeck = [];
@@ -495,10 +492,6 @@ const GameState = {
                 const randomIndex = Math.floor(Math.random() * window.gameState.players[0].deck.length);
                 window.gameState.players[0].hand.push(window.gameState.players[0].deck.splice(randomIndex, 1)[0]);
             }
-            
-            window.gameState.playerDeck = [...window.gameState.players[0].deck];
-            window.gameState.playerHand = [...window.gameState.players[0].hand];
-            
             return true;
         }
         
@@ -517,9 +510,6 @@ const GameState = {
                         const randomIndex = Math.floor(Math.random() * window.gameState.players[0].deck.length);
                         window.gameState.players[0].hand.push(window.gameState.players[0].deck.splice(randomIndex, 1)[0]);
                     }
-                    
-                    window.gameState.playerDeck = [...window.gameState.players[0].deck];
-                    window.gameState.playerHand = [...window.gameState.players[0].hand];
                     
                     return true;
                 }
@@ -550,8 +540,6 @@ const GameState = {
     deleteDeck() {
         localStorage.removeItem('lunarConquestDeck');
         
-        window.gameState.playerDeck = [];
-        window.gameState.playerHand = [];
         window.gameState.players[0].deck = [];
         window.gameState.players[0].hand = [];
         window.gameState.deckBuilding.currentDeck = [];
